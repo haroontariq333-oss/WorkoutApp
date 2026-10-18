@@ -414,7 +414,25 @@ function createServer(opts = {}) {
 
 module.exports = { createServer };
 
+/* In Docker the process starts as root so it can take ownership of the mounted data disk
+   (hosts mount disks as root), then permanently switches to an unprivileged user. */
+function dropPrivileges() {
+  const uid = Number(process.env.RUN_AS_UID), gid = Number(process.env.RUN_AS_GID);
+  if (!uid || !gid || typeof process.getuid !== "function" || process.getuid() !== 0) return;
+  const dataDir = process.env.DATA_DIR || path.join(__dirname, "..", "data");
+  fs.mkdirSync(dataDir, { recursive: true });
+  const chownTree = (p) => {
+    fs.chownSync(p, uid, gid);
+    if (fs.statSync(p).isDirectory()) fs.readdirSync(p).forEach((f) => chownTree(path.join(p, f)));
+  };
+  chownTree(dataDir);
+  process.setgroups([gid]);
+  process.setgid(gid);
+  process.setuid(uid);
+}
+
 if (require.main === module) {
+  dropPrivileges();
   const port = Number(process.env.PORT) || 3000;
   createServer().listen(port, () => console.log(`Overload running at http://localhost:${port}`));
 }

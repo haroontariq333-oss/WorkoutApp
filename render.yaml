@@ -1,0 +1,21 @@
+# Render Blueprint: creates the Overload web service with a persistent disk for the database.
+# In Render: New > Blueprint, pick this repository, then fill in VAPID_SUBJECT when asked.
+services:
+  - type: web
+    name: overload
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    disk:
+      name: overload-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: COOKIE_SECURE
+        value: "1"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: VAPID_SUBJECT
+        sync: false

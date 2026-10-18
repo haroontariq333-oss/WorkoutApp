@@ -39,14 +39,34 @@ Environment variables:
 
 ## Deploy
 
-Installing on a phone requires HTTPS, so deploy to any host that gives you HTTPS and a persistent disk for the database. With Docker:
+The app needs a host with HTTPS and a persistent disk, because the SQLite database lives in `/data`.
+
+### Render (recommended)
+
+The repo includes `render.yaml`, which sets everything up.
+
+1. Push this code to your default branch on GitHub.
+2. In Render, choose **New → Blueprint** and pick this repository.
+3. When asked for `VAPID_SUBJECT`, enter `mailto:` followed by your email address.
+4. Click **Apply**. Render builds the Docker image, creates a 1 GB disk at `/data` and gives you an `https://….onrender.com` address.
+
+This uses the Starter plan, because free services have no disk and lose data on every restart.
+
+### Any Docker host
 
 ```sh
 docker build -t overload .
-docker run -p 3000:3000 -v overload-data:/data -e COOKIE_SECURE=1 -e TRUST_PROXY=1 overload
+docker run -p 3000:3000 -v overload-data:/data \
+  -e COOKIE_SECURE=1 -e TRUST_PROXY=1 -e VAPID_SUBJECT=mailto:you@example.com overload
 ```
 
-On Render, Railway or Fly.io, deploy the repo with the included `Dockerfile`, attach a persistent volume at `/data`, and set `COOKIE_SECURE=1` and `TRUST_PROXY=1`.
+Put it behind a reverse proxy that provides HTTPS. On Railway or Fly.io, deploy with the `Dockerfile`, attach a volume at `/data`, and set the same variables.
+
+The container starts as root only long enough to take ownership of the data disk, then runs as the unprivileged `node` user.
+
+### Backups
+
+All accounts and workouts are in `/data/overload.db`. Turn on disk snapshots at your host (Render takes daily snapshots of disks), or copy the file regularly. Keep `/data/vapid.json` too, or every device has to turn reminders on again.
 
 ### Installing on your phone
 
