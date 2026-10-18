@@ -598,7 +598,8 @@ function nutrition() {
 // Cheap supermarket staples. Macros per 100 g (or 100 ml for milk), typical averages.
 // diet: "any" = meat or fish, "vegetarian" = eggs or dairy, "vegan" = plant-based.
 const FOODS = {
-  chicken: { name: "Chicken thighs, skinless (cooked)", p: 24.8, c: 0, f: 8.2, max: 250, min: 90, diet: "any", group: "Protein" },
+  chicken: { name: "Chicken thighs, skinless (cooked)", p: 24.8, c: 0, f: 8.2, max: 250, min: 70, diet: "any", group: "Protein" },
+  beef: { name: "Beef or mutton, lean (cooked)", p: 28, c: 0, f: 9, max: 250, min: 70, diet: "any", group: "Protein" },
   tuna: { name: "Canned tuna in water", p: 26, c: 0, f: 0.8, max: 240, min: 60, unit: [120, "can", "cans", 0.5], diet: "any", group: "Protein" },
   eggs: { name: "Eggs", p: 12.6, c: 0.7, f: 9.5, max: 200, min: 100, unit: [50, "egg", "eggs", 1], diet: "vegetarian", group: "Protein" },
   milk: { name: "Milk, semi-skimmed", p: 3.4, c: 4.8, f: 1.8, max: 400, min: 150, unit: [250, "glass", "glasses", 0.5], diet: "vegetarian", group: "Protein" },
@@ -609,7 +610,7 @@ const FOODS = {
   lentils: { name: "Lentils (cooked)", p: 9, c: 20, f: 0.4, max: 350, min: 120, diet: "vegan", group: "Beans & lentils" },
   beans: { name: "Canned beans, drained (kidney or black)", p: 8.7, c: 22.8, f: 0.5, max: 250, min: 80, diet: "vegan", group: "Beans & lentils" },
   chickpeas: { name: "Canned chickpeas, drained", p: 7, c: 21, f: 2.5, max: 250, diet: "vegan", group: "Beans & lentils" },
-  rice: { name: "White rice (cooked)", p: 2.7, c: 28, f: 0.3, max: 500, min: 75, diet: "vegan", group: "Carbs" },
+  flatbread: { name: "Whole-wheat flatbread (roti or chapati)", p: 11, c: 46, f: 7.5, max: 240, min: 40, unit: [40, "flatbread", "flatbreads", 1], diet: "vegan", group: "Carbs" },
   oats: { name: "Rolled oats (dry)", p: 13, c: 68, f: 6.5, max: 150, min: 30, diet: "vegan", group: "Carbs" },
   potato: { name: "Potatoes (boiled)", p: 1.9, c: 20, f: 0.1, max: 600, min: 100, diet: "vegan", group: "Carbs" },
   pasta: { name: "Pasta (cooked)", p: 5.8, c: 31, f: 0.9, max: 500, min: 75, diet: "vegan", group: "Carbs" },
@@ -634,18 +635,18 @@ const MEALS = [
     vegan: [{ title: "Oats with soy milk and peanut butter", p: "soymilk", c: "oats", f: "pb", fixed: [["banana", 120]] },
             { title: "Tofu scramble on toast", p: "tofu", c: "bread", f: "oil", fixed: [] }] } },
   { name: "Lunch", share: 0.3, options: {
-    any: [{ title: "Chicken and rice with vegetables", p: "chicken", c: "rice", f: "oil", fixed: [["veg", 150]] },
+    any: [{ title: "Chicken curry with flatbread", p: "chicken", c: "flatbread", f: "oil", fixed: [["veg", 150]] },
           { title: "Tuna pasta", p: "tuna", c: "pasta", f: "oil", fixed: [["veg", 100]] }],
-    vegetarian: [{ title: "Egg fried rice", p: "eggs", c: "rice", f: "oil", fixed: [["veg", 150]] },
-                 { title: "Soya chunk curry with rice", p: "soya", c: "rice", f: "oil", fixed: [["carrots", 100]] }],
-    vegan: [{ title: "Tofu fried rice", p: "tofu", c: "rice", f: "oil", fixed: [["veg", 150]] },
-            { title: "Soya chunk curry with rice", p: "soya", c: "rice", f: "oil", fixed: [["carrots", 100]] }] } },
+    vegetarian: [{ title: "Egg and vegetable scramble with flatbread", p: "eggs", c: "flatbread", f: "oil", fixed: [["veg", 150]] },
+                 { title: "Soya chunk curry with flatbread", p: "soya", c: "flatbread", f: "oil", fixed: [["carrots", 100]] }],
+    vegan: [{ title: "Tofu and vegetable noodles", p: "tofu", c: "pasta", f: "oil", fixed: [["veg", 150]] },
+            { title: "Soya chunk curry with flatbread", p: "soya", c: "flatbread", f: "oil", fixed: [["carrots", 100]] }] } },
   { name: "Dinner", share: 0.3, options: {
-    any: [{ title: "Chicken, potatoes and vegetables", p: "chicken", c: "potato", f: "oil", fixed: [["veg", 150]] },
-          { title: "Chicken and bean chili with rice", p: "chicken", c: "rice", f: "oil", fixed: [["beans", 100], ["carrots", 80]] }],
-    vegetarian: [{ title: "Bean and soya chili with rice", p: "soya", c: "rice", f: "oil", fixed: [["beans", 120], ["carrots", 80]] },
+    any: [{ title: "Beef or mutton curry with potatoes", p: "beef", c: "potato", f: "oil", fixed: [["veg", 150]] },
+          { title: "Beef or mutton and bean stew with flatbread", p: "beef", c: "flatbread", f: "oil", fixed: [["beans", 100], ["carrots", 80]] }],
+    vegetarian: [{ title: "Bean and soya chili with potatoes", p: "soya", c: "potato", f: "oil", fixed: [["beans", 120], ["carrots", 80]] },
                  { title: "Soya and potato curry", p: "soya", c: "potato", f: "oil", fixed: [["veg", 100]] }],
-    vegan: [{ title: "Bean and soya chili with rice", p: "soya", c: "rice", f: "oil", fixed: [["beans", 120], ["carrots", 80]] },
+    vegan: [{ title: "Bean and soya chili with potatoes", p: "soya", c: "potato", f: "oil", fixed: [["beans", 120], ["carrots", 80]] },
             { title: "Tofu and lentil stew", p: "tofu", c: "lentils", f: "oil", fixed: [["carrots", 100]] }] } },
   { name: "Snack", share: 0.15, options: {
     any: [{ title: "Yogurt, banana and peanuts", p: "yogurt", c: "banana", f: "peanuts", fixed: [] },
@@ -814,15 +815,15 @@ function viewFoods(n) {
           }).join("")}</ul></div>` : "";
       }).join("")}
     </div>
-    <p class="muted" style="font-size:14px">Weigh meat, rice, pasta and potatoes cooked; oats and soya chunks dry. Nutrition values are typical averages and vary by brand.</p>
+    <p class="muted" style="font-size:14px">Weigh meat, pasta and potatoes cooked; oats and soya chunks dry. Nutrition values are typical averages and vary by brand.</p>
   </section>
   <section class="block">
     <h2 class="h">Eating on a budget</h2>
     <div class="principles">
-      <div class="principle"><b>Buy staples in bulk</b><p>Rice, oats, lentils and dried beans are the cheapest calories in the store and keep for months.</p></div>
-      <div class="principle"><b>Cheap protein</b><p>Eggs, canned tuna, chicken thighs, milk and soya chunks give the most protein for the money. Thighs cost less than breasts.</p></div>
+      <div class="principle"><b>Buy staples in bulk</b><p>Whole-wheat flour, oats, lentils and dried beans are the cheapest calories in the store and keep for months. Making flatbread at home from flour costs very little.</p></div>
+      <div class="principle"><b>Cheap protein</b><p>Eggs, canned tuna, chicken thighs, milk and soya chunks give the most protein for the money. Thighs cost less than breasts, and for beef or mutton, lean mince or stewing cuts cost less than steaks or chops.</p></div>
       <div class="principle"><b>Frozen is fine</b><p>Frozen vegetables are as nutritious as fresh, cost less and don't go off before you use them.</p></div>
-      <div class="principle"><b>Go store-brand</b><p>Own-brand oats, rice, canned beans and peanut butter are usually the same product for less.</p></div>
+      <div class="principle"><b>Go store-brand</b><p>Own-brand oats, flour, canned beans and peanut butter are usually the same product for less.</p></div>
     </div>
   </section>`;
 }
