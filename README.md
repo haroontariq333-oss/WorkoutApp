@@ -38,6 +38,7 @@ Environment variables:
 | `EMAIL_FROM` | unset | Sender for account emails, e.g. `Overload <you@gmail.com>` |
 | `BREVO_API_KEY` or `RESEND_API_KEY` | unset | API key for the email provider. With `EMAIL_FROM` and one key set, new accounts must confirm their email and password reset is on. Without them, sign-ups skip confirmation and password reset is off |
 | `APP_URL` | Render's address | Public address used in email links, e.g. `https://overload.example.com`. On Render it defaults to the `onrender.com` address; set it if you add your own domain |
+| `SIGNUP_EMAILS` | unset | Comma-separated list of emails allowed to create accounts. Unset means anyone can sign up |
 | `OPERATOR_NAME` | "the operator of this app" | Your name or organization, shown in the privacy policy |
 | `PRIVACY_CONTACT` | from `VAPID_SUBJECT` | Email address for privacy questions, shown in the privacy policy |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | generated | Push signing keys. If unset, they're generated once and saved in `DATA_DIR/vapid.json`. Keep them stable, or devices must turn reminders on again |
@@ -54,13 +55,22 @@ The repo includes `render.yaml`, which sets everything up.
 2. In Render, choose **New → Blueprint** and pick this repository.
 3. Fill in the values Render asks for:
    - `VAPID_SUBJECT`: `mailto:` followed by your email address.
-   - `EMAIL_FROM` and `BREVO_API_KEY`: see **Account emails** below. Leave `RESEND_API_KEY` empty if you use Brevo.
-   - `OPERATOR_NAME` and `PRIVACY_CONTACT`: your name and the email address people can contact about their data.
+   - `SIGNUP_EMAILS`: the email addresses allowed to create accounts. For a personal server, enter only your own. Leave it empty to let anyone sign up.
 4. Click **Apply**. Render builds the Docker image, creates a 1 GB disk at `/data` and gives you an `https://….onrender.com` address.
 
 This uses the Starter plan, because free services have no disk and lose data on every restart.
 
-### Account emails
+### Forgot your password without email set up?
+
+On a server without email, reset it from the command line. On Render, open your service's **Shell** tab and run:
+
+```sh
+node server/reset-password.js you@example.com
+```
+
+It prints a new random password and signs the account out everywhere. Sign in with it, then pick your own under **Plan → Settings → Change password**.
+
+### Account emails (optional, for a public launch)
 
 Confirmation and password reset emails go through an email provider's API. Both of these have free plans:
 

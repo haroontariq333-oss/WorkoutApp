@@ -136,6 +136,8 @@ function createServer(opts = {}) {
   const appUrl = String(opts.appUrl || process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, "");
   const privacyContact = process.env.PRIVACY_CONTACT || (vapidSubject.startsWith("mailto:") && !vapidSubject.endsWith("@example.com") ? vapidSubject.slice(7) : "");
   const operatorName = process.env.OPERATOR_NAME || "the operator of this app";
+  // Optional allowlist: only these emails can create accounts (e.g. just yours on a personal server).
+  const signupEmails = String(opts.signupEmails ?? process.env.SIGNUP_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
   if (!mailer.enabled && !opts.quiet) console.warn("Email is not configured: sign-ups won't need verification and password reset is off. See README.");
   const loginLimit = limiter(10, 15 * 60 * 1000);
   const signupLimit = limiter(20, 60 * 60 * 1000);
@@ -335,6 +337,7 @@ function createServer(opts = {}) {
       const body = await readJson(req);
       const { email, password } = readCredentials(body);
       if (!EMAIL_RE.test(email) || email.length > 254) return fail(res, 400, "Enter a valid email address.");
+      if (signupEmails.length && !signupEmails.includes(email)) return fail(res, 403, "Sign-ups are closed on this server.");
       if (!validPassword(password)) return fail(res, 400, "Use a password of at least 8 characters.");
       if (body.acceptedPrivacy !== true) return fail(res, 400, "Please agree to the privacy policy to create an account.");
       if (q.userByEmail.get(email)) return fail(res, 409, "An account with this email already exists. Sign in instead.");

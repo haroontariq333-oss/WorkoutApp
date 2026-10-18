@@ -1150,7 +1150,7 @@ function viewAccount() {
         ${signup ? `<label class="check-row"><input id="auth-privacy" type="checkbox" required> <span>I agree to the <a href="privacy.html" target="_blank" rel="noopener">privacy policy</a>.</span></label>` : ""}
         ${error}${notice}
         <button class="btn primary" type="submit" ${auth.busy ? "disabled" : ""}>${auth.busy ? "Please wait…" : signup ? "Create account" : "Sign in"}</button>
-        ${signup ? "" : `<button class="btn small ghost" type="button" data-action="auth-mode" data-val="forgot">Forgot your password?</button>`}
+        ${signup || !Sync.emailEnabled ? "" : `<button class="btn small ghost" type="button" data-action="auth-mode" data-val="forgot">Forgot your password?</button>`}
         ${S.sessions.some((x) => !x.example) ? `<p class="muted" style="font-size:14px">Workouts already on this device will be added to your account.</p>` : ""}
       </form>`;
   }

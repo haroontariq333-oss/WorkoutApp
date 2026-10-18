@@ -152,3 +152,33 @@ test("without an email provider, sign-ups skip verification and reset is unavail
   await new Promise((res) => s2.close(res));
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test("a sign-up allowlist keeps a personal server private", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "overload-allow-"));
+  const s3 = createServer({ dataDir: dir, quiet: true, signupEmails: "Me@Example.com, partner@example.com" });
+  await new Promise((r) => s3.listen(0, "127.0.0.1", r));
+  const url = `http://127.0.0.1:${s3.address().port}/api/`;
+  const post = (body) => fetch(url + "signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: "password123", acceptedPrivacy: true, ...body }) });
+  const stranger = await post({ email: "stranger@example.com" });
+  assert.equal(stranger.status, 403);
+  assert.match((await stranger.json()).error, /closed/);
+  assert.equal((await post({ email: "me@example.com" })).status, 201);
+  assert.equal((await post({ email: "partner@example.com" })).status, 201);
+  await new Promise((res) => s3.close(res));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test("the command-line reset sets a new password and signs out every device", async () => {
+  const { resetPassword } = require("../server/reset-password.js");
+  const a = device();
+  await signup(a, "cli@example.com", "forgotten-one");
+  assert.equal((await resetPassword(dataDir, "nobody@example.com")), null);
+  const pw = await resetPassword(dataDir, "CLI@example.com");
+  assert.ok(pw.length >= 12);
+  assert.equal((await a("me")).data.email, null, "old session ended");
+  assert.equal((await device()("login", { method: "POST", body: { email: "cli@example.com", password: "forgotten-one" } })).status, 401);
+  const b = device();
+  const ok = await b("login", { method: "POST", body: { email: "cli@example.com", password: pw } });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.data.verified, true);
+});

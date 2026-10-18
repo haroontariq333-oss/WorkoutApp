@@ -19,15 +19,8 @@ services:
         value: "1"
       - key: VAPID_SUBJECT
         sync: false
-      # Account emails (verification and password reset): set EMAIL_FROM plus one provider key.
-      - key: EMAIL_FROM
+      # Only these emails can create accounts. For a personal server, enter just your own.
+      - key: SIGNUP_EMAILS
         sync: false
-      - key: BREVO_API_KEY
-        sync: false
-      - key: RESEND_API_KEY
-        sync: false
-      # Shown in the privacy policy.
-      - key: OPERATOR_NAME
-        sync: false
-      - key: PRIVACY_CONTACT
-        sync: false
+      # Optional, for a public launch later: EMAIL_FROM plus BREVO_API_KEY or RESEND_API_KEY
+      # turn on email confirmation and password reset. Add them in Render's Environment tab.
