@@ -51,6 +51,7 @@
       age: num(b.age, 10, 110) || 28,
       heightCm: num(b.heightCm, 100, 250) || 178,
       activity: oneOf(b.activity, [1.35, 1.55, 1.75], 1.55),
+      diet: oneOf(b.diet, ["any", "vegetarian", "vegan"], "any"),
     };
     const wk = num(b.weightKg, 20, 400);
     if (wk !== null) body.weightKg = wk;
@@ -59,7 +60,7 @@
       profile: {
         goal: oneOf(p.goal, ["lose", "build", "recomp"], "build"),
         level: oneOf(p.level, ["beginner", "intermediate"], "intermediate"),
-        equip: oneOf(p.equip, ["gym", "db", "bw"], "gym"),
+        equip: oneOf(p.equip, ["gym", "db", "kb", "bw"], "gym"),
         days: oneOf(p.days, [3, 4, 5], 4),
       },
       body,

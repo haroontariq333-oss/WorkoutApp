@@ -4,11 +4,15 @@ An evidence-based workout app built around progressive overload, effort measured
 
 ## Features
 
-- **Plan**: builds a program from your goal (lose fat, build muscle, recomp), experience, equipment (full gym, dumbbells, bodyweight) and schedule (3, 4 or 5 days), with a weekly-volume chart for each muscle.
-- **Train**: logs sets with a rest timer. Weights are suggested by double progression: once every set reaches the top of the rep range, the app tells you to add weight.
+- **Plan**: builds a program from your goal (lose fat, build muscle, recomp), experience, equipment and schedule (3, 4 or 5 days), with a weekly-volume chart for each muscle. Equipment options:
+  - **Gym**: barbells, cables and machines.
+  - **Dumbbells**: dumbbells and a bench.
+  - **Kettlebell**: one or two kettlebells. Weight suggestions move up one bell size (4 kg / 10 lb) at a time.
+  - **Bodyweight**: only your body and the floor. No bands, bars or furniture.
+- **Train**: logs sets with a rest timer, and you can switch equipment right from the tab. Weights are suggested by double progression: once every set reaches the top of the rep range, the app tells you to add weight. Each exercise has form cues and a **Watch how** link that opens a YouTube search for a form tutorial.
 - **Progress**: logged sets per muscle over the last 7 days, body-weight trend, estimated 1RM trend for each exercise, and workout history.
-- **Nutrition**: calories and macros from the Mifflin–St Jeor equation, adjusted for your goal.
-- **Exercises**: 40 exercises with form cues.
+- **Nutrition**: calories and macros from the Mifflin–St Jeor equation, adjusted for your goal. **What to eat** builds a sample day of four meals with portions scaled to your targets (everything, vegetarian or vegan), plus a list of foods that fit your plan with calories and protein for each.
+- **Exercises**: 59 exercises with form cues and video links.
 - **Accounts and sync**: sign in with email and password, and your workouts, weigh-ins and settings follow you across devices.
 - **Installable**: add it to your home screen on iPhone or Android, or install it on desktop. It opens full-screen and works offline.
 

@@ -1,6 +1,6 @@
 /* Offline support: serves the app shell from cache and refreshes it in the background.
    Bump CACHE when shipping changes so old caches are cleared. */
-const CACHE = "overload-v1";
+const CACHE = "overload-v2";
 const SHELL = ["./", "index.html", "styles.css", "app.js", "merge.js", "manifest.webmanifest",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-touch-icon.png"];
 const FONT_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];

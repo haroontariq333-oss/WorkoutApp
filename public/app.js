@@ -12,12 +12,8 @@ const EX = {
     cues: ["Unlock your knees, then push your hips straight back.", "Keep the bar dragging along your thighs and shins.", "Stop when your hips stop moving back, usually around mid-shin, and stand by squeezing your glutes."] },
   "db-rdl": { name: "Dumbbell Romanian Deadlift", muscles: ["Hamstrings", "Glutes"], lower: true, gear: "Dumbbells",
     cues: ["Hold the dumbbells against the front of your thighs.", "Hinge at the hips with a long spine until you feel a strong hamstring stretch.", "Keep the weights close to your legs the whole way."] },
-  "sl-hip-thrust": { name: "Single-Leg Hip Thrust", muscles: ["Glutes", "Hamstrings"], bw: true, reps: [10, 20], gear: "Bodyweight + couch",
-    cues: ["Upper back on a couch edge, one foot flat under your knee.", "Tuck your chin and ribs, then drive your hips up until your torso is level.", "Pause one second at the top on every rep."] },
   "bss": { name: "Bulgarian Split Squat", muscles: ["Quads", "Glutes"], lower: true, gear: "Dumbbells + bench",
     cues: ["Rear foot laces-down on the bench, front foot far enough forward that your heel stays down.", "Drop your back knee straight down toward the floor.", "Lean your torso slightly forward to load the glutes more."] },
-  "bss-bw": { name: "Bulgarian Split Squat (bodyweight)", muscles: ["Quads", "Glutes"], bw: true, reps: [8, 20], gear: "Bodyweight + chair",
-    cues: ["Rear foot on a chair or couch.", "Lower for three seconds, pause at the bottom, stand up under control.", "Hold a filled backpack once you pass 20 reps."] },
   "leg-curl": { name: "Seated Leg Curl", muscles: ["Hamstrings"], gear: "Machine",
     cues: ["Set the pad just above your heels and the thigh pad snug.", "Lean your torso forward a little to stretch the hamstrings more.", "Lower over two to three seconds; don't let the stack touch down between reps."] },
   "slider-curl": { name: "Slider Leg Curl", muscles: ["Hamstrings", "Glutes"], bw: true, reps: [8, 15], gear: "Towel or sliders",
@@ -26,11 +22,9 @@ const EX = {
     cues: ["Line your knee up with the machine's pivot point.", "Kick up to full lockout and squeeze for a second.", "Lower until your knees are bent past 90°."] },
   "step-up": { name: "Dumbbell Step-Up", muscles: ["Quads", "Glutes"], gear: "Dumbbells + bench",
     cues: ["Use a box or bench about knee height.", "Drive through the top foot; don't push off the bottom one.", "Lower yourself slowly instead of dropping down."] },
-  "heel-elev-squat": { name: "Heels-Elevated Squat", muscles: ["Quads"], bw: true, reps: [12, 25], gear: "Bodyweight + book",
-    cues: ["Heels on a thick book or plate, feet narrow.", "Keep your torso upright and let your knees travel far forward.", "Take three seconds on the way down."] },
   "calf-machine": { name: "Standing Calf Raise", muscles: ["Calves"], gear: "Machine or Smith",
     cues: ["Pause for two seconds at the bottom stretch; no bouncing.", "Rise as high as you can onto your big toe.", "Keep your knees straight but not locked."] },
-  "sl-calf": { name: "Single-Leg Calf Raise", muscles: ["Calves"], bw: true, reps: [10, 20], gear: "Step + optional dumbbell",
+  "sl-calf": { name: "Single-Leg Calf Raise", muscles: ["Calves"], bw: true, reps: [10, 20], gear: "Step + dumbbell",
     cues: ["Stand on one foot on a step and hold a wall for balance.", "Drop your heel as low as it goes and pause.", "Hold a dumbbell once 20 reps is easy."] },
   "bench": { name: "Barbell Bench Press", muscles: ["Chest", "Triceps"], gear: "Barbell + bench",
     cues: ["Pinch your shoulder blades back and down, then keep them there.", "Lower to your lower chest with forearms vertical.", "Keep your feet planted and press the bar back toward your face slightly."] },
@@ -40,8 +34,6 @@ const EX = {
     cues: ["Hands just wider than your shoulders, body in one straight line.", "Tuck your elbows to about 45°.", "Touch your chest to a fist-height target on every rep."] },
   "incline-db": { name: "Incline Dumbbell Press", muscles: ["Chest", "Shoulders"], gear: "Dumbbells + incline bench",
     cues: ["Set the bench to about 30°; higher turns it into a shoulder press.", "Lower to your upper chest.", "Press up in a slight arc toward your eye line."] },
-  "feet-elev-pushup": { name: "Feet-Elevated Push-Up", muscles: ["Chest", "Shoulders"], bw: true, reps: [8, 20], gear: "Bodyweight + chair",
-    cues: ["Feet on a chair, hands on the floor.", "Keep your hips in line with your shoulders.", "Raise your feet higher to make it harder."] },
   "db-ohp": { name: "Seated Dumbbell Shoulder Press", muscles: ["Shoulders", "Triceps"], gear: "Dumbbells + bench",
     cues: ["Back supported, dumbbells at ear height with palms forward.", "Press straight up without arching your lower back.", "Lower until your elbows are just below your shoulders."] },
   "pike-pushup": { name: "Pike Push-Up", muscles: ["Shoulders", "Triceps"], bw: true, reps: [6, 15], gear: "Bodyweight",
@@ -50,28 +42,18 @@ const EX = {
     cues: ["Chest stays on the pad so your lower back doesn't do the work.", "Pull your elbows toward your hips.", "Let your shoulder blades spread forward at the bottom for a full stretch."] },
   "db-row": { name: "One-Arm Dumbbell Row", muscles: ["Back", "Biceps"], gear: "Dumbbell + bench",
     cues: ["One hand and knee on the bench, back flat.", "Row the dumbbell toward your back pocket.", "Lower all the way until your arm is straight."] },
-  "inverted-row": { name: "Inverted Row", muscles: ["Back", "Biceps"], bw: true, reps: [8, 15], gear: "Sturdy table or rings",
-    cues: ["Lie under a sturdy table and grip its edge.", "Keep your body straight and pull your chest to the edge.", "Walk your feet forward to make it easier."] },
   "pulldown": { name: "Lat Pulldown", muscles: ["Back", "Biceps"], gear: "Cable machine",
     cues: ["Grip slightly wider than your shoulders and lock your thighs under the pad.", "Pull your elbows down toward your back pockets.", "Let the bar rise until your arms are fully straight."] },
-  "pullup": { name: "Pull-Up", muscles: ["Back", "Biceps"], bw: true, reps: [4, 10], gear: "Pull-up bar",
-    cues: ["Start from a dead hang with your arms straight.", "Pull your chest toward the bar.", "Can't do 4 yet? Jump up and lower yourself over five seconds."] },
   "cable-lateral": { name: "Cable Lateral Raise", muscles: ["Shoulders"], gear: "Cable machine",
     cues: ["Stand side-on to the cable with the handle behind your leg.", "Raise out to the side, leading with your elbow.", "Stop at shoulder height and lower slowly."] },
   "db-lateral": { name: "Dumbbell Lateral Raise", muscles: ["Shoulders"], gear: "Dumbbells",
     cues: ["Lean forward slightly with a soft bend in your elbows.", "Raise the dumbbells out and slightly forward.", "Use a weight you can control for 10 or more clean reps."] },
-  "band-lateral": { name: "Band Lateral Raise", muscles: ["Shoulders"], bw: true, reps: [12, 25], gear: "Resistance band",
-    cues: ["Stand on the band and hold one end in each hand.", "Raise out to the sides until your arms are level with your shoulders.", "Pause at the top, where the band is hardest."] },
   "reverse-pec-deck": { name: "Reverse Pec Deck", muscles: ["Shoulders", "Back"], gear: "Machine",
     cues: ["Set the handles so your arms are level with your shoulders.", "Sweep your arms back in a wide arc.", "Keep your shoulder blades from pinching hard; let the rear delts do it."] },
   "db-rear-fly": { name: "Dumbbell Rear Delt Fly", muscles: ["Shoulders", "Back"], gear: "Dumbbells + bench",
     cues: ["Lie chest-down on an incline bench.", "Raise the dumbbells out wide with your pinkies leading.", "Use light weight and a full range."] },
-  "band-pull-apart": { name: "Band Pull-Apart", muscles: ["Shoulders", "Back"], bw: true, reps: [15, 25], gear: "Resistance band",
-    cues: ["Hold the band at shoulder height with straight arms.", "Pull it apart until it touches your chest.", "Return slowly."] },
   "incline-curl": { name: "Incline Dumbbell Curl", muscles: ["Biceps"], gear: "Dumbbells + incline bench",
     cues: ["Sit back on a 45–60° bench and let your arms hang straight.", "Curl without letting your elbows drift forward.", "Lower all the way; the stretched position does a lot of the work."] },
-  "band-curl": { name: "Band Curl", muscles: ["Biceps"], bw: true, reps: [12, 25], gear: "Resistance band",
-    cues: ["Stand on the band, palms forward.", "Keep your elbows pinned at your sides.", "Squeeze at the top and lower over two seconds."] },
   "cable-oh-ext": { name: "Overhead Cable Triceps Extension", muscles: ["Triceps"], gear: "Cable machine",
     cues: ["Face away from the cable with the rope behind your head.", "Keep your elbows pointing forward.", "Reach a deep stretch at the bottom, then lock out fully."] },
   "db-oh-ext": { name: "Overhead Dumbbell Extension", muscles: ["Triceps"], gear: "One dumbbell",
@@ -82,29 +64,91 @@ const EX = {
     cues: ["Kneel and hold the rope beside your head.", "Curl your ribs toward your pelvis; don't just bow at the hips.", "Hold the squeezed position for a second."] },
   "dead-bug": { name: "Dead Bug", muscles: ["Core"], bw: true, reps: [8, 15], gear: "Bodyweight",
     cues: ["Lie on your back with arms up and knees over hips.", "Press your lower back into the floor and keep it there.", "Extend the opposite arm and leg slowly; reps are per side."] },
+  "db-pullover": { name: "Dumbbell Pullover", muscles: ["Back", "Chest"], gear: "One dumbbell + bench",
+    cues: ["Lie across or along the bench holding one dumbbell over your chest with both hands.", "Lower it behind your head in an arc with a slight bend in your elbows until your lats stretch.", "Pull it back over your chest by driving your elbows toward your hips."] },
+
+  /* Bodyweight only: nothing but the floor and your own body. */
+  "sl-glute-bridge": { name: "Single-Leg Glute Bridge", muscles: ["Glutes", "Hamstrings"], bw: true, reps: [10, 20], gear: "Bodyweight",
+    cues: ["Lie on your back, one foot flat near your glutes and the other leg straight.", "Drive through your heel until your hips and knee form a straight line.", "Pause for two seconds at the top on every rep."] },
+  "reverse-lunge-bw": { name: "Reverse Lunge", muscles: ["Quads", "Glutes"], bw: true, reps: [10, 20], gear: "Bodyweight",
+    cues: ["Step one foot back and lower until your back knee almost touches the floor.", "Keep most of your weight on the front foot.", "Push through the front heel to return; reps are per leg."] },
+  "bridge-walkout": { name: "Glute Bridge Walkout", muscles: ["Hamstrings", "Glutes"], bw: true, reps: [6, 12], gear: "Bodyweight",
+    cues: ["Hold a glute bridge with your hips high.", "Walk your heels out in small steps until your legs are nearly straight, keeping your hips up.", "Walk back in; one out-and-back is one rep."] },
+  "one-half-squat": { name: "1½-Rep Squat", muscles: ["Quads", "Glutes"], bw: true, reps: [10, 20], gear: "Bodyweight",
+    cues: ["Squat all the way down, rise halfway, then sink back to the bottom.", "Stand all the way up; that whole sequence is one rep.", "Keep your heels down and your chest tall."] },
+  "bw-calf": { name: "Single-Leg Calf Raise (floor)", muscles: ["Calves"], bw: true, reps: [12, 25], gear: "Bodyweight",
+    cues: ["Stand on one foot on flat ground.", "Rise as high as you can onto the ball of your foot and hold for one second.", "Lower slowly; touch a wall lightly only if you need balance."] },
+  "wide-pushup": { name: "Wide Push-Up", muscles: ["Chest", "Shoulders"], bw: true, reps: [8, 20], gear: "Bodyweight",
+    cues: ["Place your hands about one and a half times shoulder width apart.", "Lower your chest between your hands for a deep stretch.", "Press up while squeezing your hands toward each other."] },
+  "superman-pull": { name: "Superman Pull", muscles: ["Back", "Shoulders"], bw: true, reps: [10, 15], gear: "Bodyweight",
+    cues: ["Lie face down with your arms straight overhead.", "Lift your chest and arms, then pull your elbows down to your ribs as if doing a pull-up.", "Squeeze your shoulder blades for two seconds before reaching back out."] },
+  "reverse-snow-angel": { name: "Reverse Snow Angel", muscles: ["Back", "Shoulders"], bw: true, reps: [8, 15], gear: "Bodyweight",
+    cues: ["Lie face down with your arms at your sides and lift your hands just off the floor.", "Sweep your arms in a wide arc until they meet overhead.", "Keep your thumbs up and move slowly in both directions."] },
+  "hindu-pushup": { name: "Hindu Push-Up", muscles: ["Shoulders", "Chest"], bw: true, reps: [6, 15], gear: "Bodyweight",
+    cues: ["Start in a pike with your hips high.", "Swoop your chest down close to the floor and forward until your arms are straight.", "Reverse the motion back to the pike."] },
+  "prone-ytw": { name: "Prone Y-T-W Raise", muscles: ["Shoulders", "Back"], bw: true, reps: [6, 12], gear: "Bodyweight",
+    cues: ["Lie face down with your forehead on a folded hand or the floor.", "Raise your arms into a Y, then a T, then a W, holding each for two seconds.", "One Y-T-W sequence is one rep."] },
+  "self-curl": { name: "Self-Resisted Curl", muscles: ["Biceps"], bw: true, reps: [8, 12], gear: "Bodyweight",
+    cues: ["Curl one arm while pressing down on that wrist hard with your other hand.", "Take three seconds up and three seconds down against the resistance.", "Push as hard as you can; reps are per arm."] },
+
+  /* Kettlebell */
+  "kb-goblet-squat": { name: "Kettlebell Goblet Squat", muscles: ["Quads", "Glutes"], lower: true, kb: true, gear: "Kettlebell",
+    cues: ["Hold the kettlebell by the horns against your chest.", "Sit down between your heels with your elbows inside your knees.", "Drive up through your whole foot."] },
+  "kb-swing": { name: "Kettlebell Swing", muscles: ["Glutes", "Hamstrings"], lower: true, kb: true, reps: [12, 20], gear: "Kettlebell",
+    cues: ["Hike the bell back between your legs like a football snap, hinging at the hips.", "Snap your hips forward hard so the bell floats to chest height; your arms just guide it.", "Let it fall back and hinge again; this is a hip hinge, not a squat."] },
+  "kb-reverse-lunge": { name: "Kettlebell Reverse Lunge", muscles: ["Quads", "Glutes"], lower: true, kb: true, gear: "Kettlebell",
+    cues: ["Hold the bell at your chest.", "Step back and lower until your back knee almost touches the floor.", "Push through the front heel to return; reps are per leg."] },
+  "kb-sl-rdl": { name: "Kettlebell Single-Leg RDL", muscles: ["Hamstrings", "Glutes"], kb: true, gear: "Kettlebell",
+    cues: ["Hold the bell in the hand opposite your standing leg.", "Hinge forward as your free leg rises behind you, hips square to the floor.", "Stand by squeezing the glute of the standing leg."] },
+  "kb-cossack": { name: "Kettlebell Cossack Squat", muscles: ["Quads", "Glutes"], kb: true, gear: "Kettlebell",
+    cues: ["Take a very wide stance and hold the bell at your chest.", "Shift down over one leg while the other stays straight with toes up.", "Go as deep as you can control; reps are per side."] },
+  "kb-calf": { name: "Kettlebell Calf Raise", muscles: ["Calves"], kb: true, reps: [12, 20], gear: "Kettlebell",
+    cues: ["Hold the bell at your side and stand on one foot.", "Rise as high as possible and pause.", "Lower slowly to a full stretch."] },
+  "kb-floor-press": { name: "Kettlebell Floor Press", muscles: ["Chest", "Triceps"], kb: true, gear: "Kettlebell(s)",
+    cues: ["Lie on your back with knees bent and the bell resting on the back of your forearm.", "Lower until your upper arm touches the floor, pause.", "Press straight up over your shoulder."] },
+  "kb-deficit-pushup": { name: "Deficit Push-Up on Kettlebells", muscles: ["Chest", "Shoulders"], bw: true, reps: [8, 20], gear: "Two kettlebells",
+    cues: ["Grip two upright kettlebells by the handles, shoulder width apart.", "Lower your chest below your hands for a deep stretch.", "Keep the bells steady and your body straight."] },
+  "kb-press": { name: "Single-Arm Kettlebell Press", muscles: ["Shoulders", "Triceps"], kb: true, gear: "Kettlebell",
+    cues: ["Clean the bell to the rack position on your chest.", "Squeeze your glutes and press straight overhead, biceps by your ear.", "Lower under control back to the rack; reps are per arm."] },
+  "kb-row": { name: "Single-Arm Kettlebell Row", muscles: ["Back", "Biceps"], kb: true, gear: "Kettlebell",
+    cues: ["Stagger your stance and rest one hand on your front thigh, back flat.", "Row the bell toward your hip.", "Lower until your arm is straight; reps are per arm."] },
+  "kb-gorilla-row": { name: "Kettlebell Gorilla Row", muscles: ["Back", "Biceps"], kb: true, gear: "Two kettlebells",
+    cues: ["Stand wide with two bells between your feet and hinge forward.", "Row one bell while pressing the other into the floor.", "Alternate sides; each pull counts as one rep."] },
+  "kb-lateral": { name: "Kettlebell Lateral Raise", muscles: ["Shoulders"], kb: true, gear: "Light kettlebell",
+    cues: ["Hold a light bell by the handle at your side.", "Raise it out to shoulder height, leading with your elbow.", "Lower over two to three seconds; reps are per arm."] },
+  "kb-high-pull": { name: "Kettlebell High Pull", muscles: ["Shoulders", "Back"], kb: true, gear: "Kettlebell",
+    cues: ["Start like a swing, then pull the bell toward your chest at the top.", "Keep your elbow high and wide as you pull.", "Push the bell back out and let it swing down."] },
+  "kb-curl": { name: "Kettlebell Curl", muscles: ["Biceps"], kb: true, gear: "Kettlebell",
+    cues: ["Hold the bell by the horns with your elbows at your sides.", "Curl up without swinging your torso.", "Lower all the way until your arms are straight."] },
+  "kb-oh-ext": { name: "Kettlebell Overhead Extension", muscles: ["Triceps"], kb: true, gear: "Kettlebell",
+    cues: ["Hold the bell by the horns overhead.", "Lower it behind your head with your elbows pointing up.", "Extend until your arms are straight."] },
+  "kb-getup": { name: "Turkish Get-Up", muscles: ["Core", "Shoulders"], kb: true, reps: [2, 5], gear: "Kettlebell",
+    cues: ["Lie down holding the bell straight up over your shoulder, eyes on it the whole time.", "Roll to your elbow, then your hand, bridge your hips and sweep your leg under to a kneel, then stand.", "Reverse every step to lie back down; reps are per side. Learn it with no weight first."] },
 };
 
 const PICK = {
-  squat: { gym: "back-squat", db: "goblet-squat", bw: "split-squat-bw" },
-  hinge: { gym: "rdl", db: "db-rdl", bw: "sl-hip-thrust" },
-  lunge: { gym: "bss", db: "bss", bw: "bss-bw" },
-  kneeFlex: { gym: "leg-curl", db: "slider-curl", bw: "slider-curl" },
-  quadIso: { gym: "leg-ext", db: "step-up", bw: "heel-elev-squat" },
-  calf: { gym: "calf-machine", db: "sl-calf", bw: "sl-calf" },
-  hPush: { gym: "bench", db: "db-bench", bw: "push-up" },
-  inclinePush: { gym: "incline-db", db: "incline-db", bw: "feet-elev-pushup" },
-  vPush: { gym: "db-ohp", db: "db-ohp", bw: "pike-pushup" },
-  hPull: { gym: "cs-row", db: "db-row", bw: "inverted-row" },
-  vPull: { gym: "pulldown", db: "pullup", bw: "pullup" },
-  lateral: { gym: "cable-lateral", db: "db-lateral", bw: "band-lateral" },
-  rearDelt: { gym: "reverse-pec-deck", db: "db-rear-fly", bw: "band-pull-apart" },
-  biceps: { gym: "incline-curl", db: "incline-curl", bw: "band-curl" },
-  triceps: { gym: "cable-oh-ext", db: "db-oh-ext", bw: "close-pushup" },
-  core: { gym: "cable-crunch", db: "dead-bug", bw: "dead-bug" },
+  squat: { gym: "back-squat", db: "goblet-squat", kb: "kb-goblet-squat", bw: "split-squat-bw" },
+  hinge: { gym: "rdl", db: "db-rdl", kb: "kb-swing", bw: "sl-glute-bridge" },
+  lunge: { gym: "bss", db: "bss", kb: "kb-reverse-lunge", bw: "reverse-lunge-bw" },
+  kneeFlex: { gym: "leg-curl", db: "slider-curl", kb: "kb-sl-rdl", bw: "bridge-walkout" },
+  quadIso: { gym: "leg-ext", db: "step-up", kb: "kb-cossack", bw: "one-half-squat" },
+  calf: { gym: "calf-machine", db: "sl-calf", kb: "kb-calf", bw: "bw-calf" },
+  hPush: { gym: "bench", db: "db-bench", kb: "kb-floor-press", bw: "push-up" },
+  inclinePush: { gym: "incline-db", db: "incline-db", kb: "kb-deficit-pushup", bw: "wide-pushup" },
+  vPush: { gym: "db-ohp", db: "db-ohp", kb: "kb-press", bw: "pike-pushup" },
+  hPull: { gym: "cs-row", db: "db-row", kb: "kb-row", bw: "superman-pull" },
+  vPull: { gym: "pulldown", db: "db-pullover", kb: "kb-gorilla-row", bw: "reverse-snow-angel" },
+  lateral: { gym: "cable-lateral", db: "db-lateral", kb: "kb-lateral", bw: "hindu-pushup" },
+  rearDelt: { gym: "reverse-pec-deck", db: "db-rear-fly", kb: "kb-high-pull", bw: "prone-ytw" },
+  biceps: { gym: "incline-curl", db: "incline-curl", kb: "kb-curl", bw: "self-curl" },
+  triceps: { gym: "cable-oh-ext", db: "db-oh-ext", kb: "kb-oh-ext", bw: "close-pushup" },
+  core: { gym: "cable-crunch", db: "dead-bug", kb: "kb-getup", bw: "dead-bug" },
 };
 const ISOLATION = new Set(["kneeFlex", "quadIso", "calf", "lateral", "rearDelt", "biceps", "triceps", "core"]);
 const MUSCLES = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Quads", "Glutes", "Hamstrings", "Calves", "Core"];
-const EQUIP_LABEL = { gym: "Full gym", db: "Dumbbells", bw: "Bodyweight" };
+const EQUIP_LABEL = { gym: "Full gym", db: "Dumbbells", kb: "Kettlebell", bw: "Bodyweight" };
+const EQUIP_OPTIONS = [["gym", "Gym"], ["db", "Dumbbells"], ["kb", "Kettlebell"], ["bw", "Bodyweight"]];
+const videoUrl = (ex) => "https://www.youtube.com/results?search_query=" + encodeURIComponent(`how to do ${ex.name} proper form`);
 
 const SPLITS = {
   3: { name: "Full Body", days: [
@@ -162,7 +206,7 @@ function defaults() {
   return {
     v: 1, unit: "kg",
     profile: { goal: "build", level: "intermediate", equip: "gym", days: 4 },
-    body: { sex: "male", age: 28, heightCm: 178, activity: 1.55 },
+    body: { sex: "male", age: 28, heightCm: 178, activity: 1.55, diet: "any" },
     sessions: [], weights: [], drafts: {},
     deleted: {}, settingsAt: 0,
   };
@@ -242,6 +286,7 @@ function nextDayKey(prog) {
 
 function increment(ex, slot) {
   const kg = S.unit === "kg";
+  if (ex.kb) return kg ? 4 : 10; // next kettlebell size up
   if (slot.iso) return kg ? 1 : 2.5;
   return ex.lower ? (kg ? 5 : 10) : (kg ? 2.5 : 5);
 }
@@ -345,6 +390,11 @@ const GOAL_NOTE = {
   recomp: ["Eat near maintenance", "High protein at maintenance calories lets beginners and returning lifters lose fat and gain muscle at the same time."],
 };
 
+const EQUIP_NOTE = {
+  bw: "Every exercise uses only your body and the floor. Make sets harder by slowing down the lowering phase and pausing at the hardest point. Back training is the weak spot without equipment, so the back exercises are done slowly with hard squeezes.",
+  kb: "Built for one or two kettlebells. When the top of a rep range gets easy, move up one bell size (usually 4 kg / 10 lb), or slow the reps down if you don't have the next bell.",
+};
+
 function viewPlan() {
   const p = S.profile, prog = program();
   const g = GOAL_NOTE[p.goal];
@@ -355,12 +405,13 @@ function viewPlan() {
     <div class="form-grid">
       ${field("Goal", seg("profile", "goal", p.goal, [["lose", "Lose fat"], ["build", "Build muscle"], ["recomp", "Recomp"]]))}
       ${field("Experience", seg("profile", "level", p.level, [["beginner", "Beginner"], ["intermediate", "Intermediate"]]))}
-      ${field("Equipment", seg("profile", "equip", p.equip, [["gym", "Full gym"], ["db", "Dumbbells"], ["bw", "Bodyweight"]]))}
+      ${field("Equipment", seg("profile", "equip", p.equip, EQUIP_OPTIONS))}
       ${field("Days per week", seg("profile", "days", p.days, [[3, "3 days"], [4, "4 days"], [5, "5 days"]]))}
     </div>
   </section>
   <section class="block">
     <div class="spread"><h2 class="h">${prog.name}</h2><span class="muted">${p.days} days · ${EQUIP_LABEL[p.equip]} · 8-week block</span></div>
+    ${EQUIP_NOTE[p.equip] ? `<p class="lede">${EQUIP_NOTE[p.equip]}</p>` : ""}
     ${prog.days.map((d, i) => `
       <div class="card day">
         <div class="day-head"><span class="h3">${d.name}</span><span class="label">Day ${i + 1}</span></div>
@@ -415,6 +466,7 @@ function viewTrain() {
   return `
   <section class="block">
     <h2 class="h">Today's workout</h2>
+    ${field("Equipment", seg("profile", "equip", S.profile.equip, EQUIP_OPTIONS))}
     <div class="day-pick" role="group" aria-label="Workout day">
       ${prog.days.map((d) => `<button type="button" data-action="pick-day" data-day="${d.key}" aria-pressed="${d.key === day.key}">
         <span class="${d.key === next ? "next" : ""}">${d.key === next ? "Next up" : "Day " + (prog.days.indexOf(d) + 1)}</span><b>${d.name}</b></button>`).join("")}
@@ -443,7 +495,8 @@ function viewTrain() {
         }).join("")}
       </div>
       <div class="spread">
-        <details class="cues"><summary>Form cues</summary><ul>${ex.cues.map((c) => `<li>${c}</li>`).join("")}</ul></details>
+        <div class="row ex-links"><details class="cues"><summary>Form cues</summary><ul>${ex.cues.map((c) => `<li>${c}</li>`).join("")}</ul></details>
+          <a class="video-link" href="${videoUrl(ex)}" target="_blank" rel="noopener noreferrer">▶ Watch how</a></div>
         <button class="btn small ghost" data-action="add-set" data-ex="${s.id}">+ Add set</button>
       </div>
     </section>`;
@@ -539,6 +592,194 @@ function nutrition() {
   return { kg, tdee, cal, protein, fat, carbs };
 }
 
+/* ---------- Food suggestions ---------- */
+// Macros per 100 g (USDA-style averages). diet: "any" = meat or fish, "vegetarian" = eggs or dairy, "vegan" = plant-based.
+const FOODS = {
+  chicken: { name: "Chicken breast (cooked)", p: 31, c: 0, f: 3.6, diet: "any", group: "Protein" },
+  beef: { name: "Lean beef mince, 5% fat (cooked)", p: 26, c: 0, f: 7, diet: "any", group: "Protein" },
+  salmon: { name: "Salmon (cooked)", p: 22, c: 0, f: 12, diet: "any", group: "Protein" },
+  tuna: { name: "Tuna, canned in water", p: 26, c: 0, f: 0.8, diet: "any", group: "Protein" },
+  eggs: { name: "Eggs", p: 12.6, c: 0.7, f: 9.5, unit: [50, "egg", "eggs", 1], diet: "vegetarian", group: "Protein" },
+  whites: { name: "Egg whites", p: 11, c: 0.7, f: 0.2, diet: "vegetarian", group: "Protein" },
+  yogurt: { name: "Greek yogurt, 0% fat", p: 10, c: 3.6, f: 0.4, diet: "vegetarian", group: "Protein" },
+  cottage: { name: "Cottage cheese, low fat", p: 12.4, c: 2.7, f: 1, diet: "vegetarian", group: "Protein" },
+  whey: { name: "Whey protein powder", p: 80, c: 8, f: 6, unit: [30, "scoop", "scoops", 0.5], diet: "vegetarian", group: "Protein" },
+  plantpro: { name: "Plant protein powder", p: 78, c: 6, f: 7, unit: [30, "scoop", "scoops", 0.5], diet: "vegan", group: "Protein" },
+  tofu: { name: "Firm tofu", p: 17, c: 3, f: 9, diet: "vegan", group: "Protein" },
+  tempeh: { name: "Tempeh", p: 20, c: 8, f: 11, diet: "vegan", group: "Protein" },
+  edamame: { name: "Edamame (shelled)", p: 11, c: 9, f: 5, diet: "vegan", group: "Protein" },
+  lentils: { name: "Lentils (cooked)", p: 9, c: 20, f: 0.4, diet: "vegan", group: "Carbs" },
+  chickpeas: { name: "Chickpeas (cooked)", p: 8.9, c: 27, f: 2.6, diet: "vegan", group: "Carbs" },
+  rice: { name: "White rice (cooked)", p: 2.7, c: 28, f: 0.3, diet: "vegan", group: "Carbs" },
+  oats: { name: "Rolled oats (dry)", p: 13, c: 68, f: 6.5, diet: "vegan", group: "Carbs" },
+  potato: { name: "Potatoes (boiled)", p: 1.9, c: 20, f: 0.1, diet: "vegan", group: "Carbs" },
+  sweetpotato: { name: "Sweet potato (baked)", p: 2, c: 21, f: 0.2, diet: "vegan", group: "Carbs" },
+  pasta: { name: "Pasta (cooked)", p: 5.8, c: 31, f: 0.9, diet: "vegan", group: "Carbs" },
+  bread: { name: "Whole-wheat bread", p: 13, c: 41, f: 3.4, unit: [35, "slice", "slices", 1], diet: "vegan", group: "Carbs" },
+  banana: { name: "Banana", p: 1.1, c: 23, f: 0.3, unit: [120, "banana", "bananas", 0.5], diet: "vegan", group: "Fruit & veg" },
+  berries: { name: "Berries", p: 0.7, c: 14, f: 0.3, diet: "vegan", group: "Fruit & veg" },
+  veg: { name: "Mixed vegetables", p: 2.4, c: 7, f: 0.4, diet: "vegan", group: "Fruit & veg" },
+  salad: { name: "Salad greens", p: 2.9, c: 3.6, f: 0.4, diet: "vegan", group: "Fruit & veg" },
+  olive: { name: "Olive oil", p: 0, c: 0, f: 100, unit: [13.5, "tbsp", "tbsp", 0.5], diet: "vegan", group: "Fats" },
+  avocado: { name: "Avocado", p: 2, c: 8.5, f: 14.7, diet: "vegan", group: "Fats" },
+  pb: { name: "Peanut butter", p: 25, c: 20, f: 50, unit: [16, "tbsp", "tbsp", 0.5], diet: "vegan", group: "Fats" },
+  almonds: { name: "Almonds", p: 21, c: 22, f: 50, diet: "vegan", group: "Fats" },
+};
+const DIET_RANK = { any: 0, vegetarian: 1, vegan: 2 };
+const kcal100 = (f) => f.p * 4 + f.c * 4 + f.f * 9;
+
+// Each meal option names a protein, carb and fat food to scale, plus fixed sides.
+const MEALS = [
+  { name: "Breakfast", share: 0.25, options: {
+    any: [{ title: "Yogurt and oat bowl", p: "yogurt", c: "oats", f: "almonds", fixed: [["berries", 100]] },
+          { title: "Egg scramble on toast", p: "whites", c: "bread", f: "avocado", fixed: [["eggs", 50]] }],
+    vegan: [{ title: "Protein oats", p: "plantpro", c: "oats", f: "pb", fixed: [["berries", 100]] },
+            { title: "Tofu scramble on toast", p: "tofu", c: "bread", f: "avocado", fixed: [] }] } },
+  { name: "Lunch", share: 0.3, options: {
+    any: [{ title: "Chicken rice bowl", p: "chicken", c: "rice", f: "olive", fixed: [["veg", 150]] },
+          { title: "Tuna pasta salad", p: "tuna", c: "pasta", f: "olive", fixed: [["salad", 80]] }],
+    vegetarian: [{ title: "Egg fried rice", p: "eggs", c: "rice", f: "olive", fixed: [["veg", 150]] },
+                 { title: "Cottage cheese toast and salad", p: "cottage", c: "bread", f: "avocado", fixed: [["salad", 80]] }],
+    vegan: [{ title: "Tempeh rice bowl", p: "tempeh", c: "rice", f: "olive", fixed: [["veg", 150]] },
+            { title: "Tofu and lentil salad", p: "tofu", c: "lentils", f: "olive", fixed: [["salad", 80]] }] } },
+  { name: "Dinner", share: 0.3, options: {
+    any: [{ title: "Salmon and potatoes", p: "salmon", c: "potato", f: "olive", fixed: [["veg", 150]] },
+          { title: "Beef and rice", p: "beef", c: "rice", f: "olive", fixed: [["veg", 150]] }],
+    vegetarian: [{ title: "Tofu stir-fry with pasta", p: "tofu", c: "pasta", f: "olive", fixed: [["veg", 150]] },
+                 { title: "Lentil curry with yogurt", p: "yogurt", c: "lentils", f: "olive", fixed: [["veg", 150]] }],
+    vegan: [{ title: "Tofu stir-fry with pasta", p: "tofu", c: "pasta", f: "olive", fixed: [["veg", 150]] },
+            { title: "Tempeh and sweet potato", p: "tempeh", c: "sweetpotato", f: "olive", fixed: [["veg", 150]] }] } },
+  { name: "Snack", share: 0.15, options: {
+    any: [{ title: "Protein shake and banana", p: "whey", c: "banana", f: "pb", fixed: [] },
+          { title: "Cottage cheese and berries", p: "cottage", c: "berries", f: "almonds", fixed: [] }],
+    vegan: [{ title: "Protein shake and banana", p: "plantpro", c: "banana", f: "pb", fixed: [] },
+            { title: "Edamame and fruit", p: "edamame", c: "banana", f: "almonds", fixed: [] }] } },
+];
+
+/* Non-negative least squares over at most three foods, with errors weighed roughly in calories. */
+function solvePortions(foods, target) {
+  const W = [8, 4, 9]; // protein counts double: missing it matters more than a few calories
+  const row = (fd) => [fd.p / 100 * W[0], fd.c / 100 * W[1], fd.f / 100 * W[2]];
+  const b = [target.p * W[0], target.c * W[1], target.f * W[2]];
+  let active = foods.map((_, i) => i);
+  let x = foods.map(() => 0);
+  for (let guard = 0; guard < 4 && active.length; guard++) {
+    const cols = active.map((i) => row(foods[i]));
+    const n = cols.length;
+    const M = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => cols[i].reduce((a, v, k) => a + v * cols[j][k], 0)));
+    const v = cols.map((col) => col.reduce((a, val, k) => a + val * b[k], 0));
+    for (let i = 0; i < n; i++) { // Gaussian elimination with partial pivoting
+      let piv = i;
+      for (let r = i + 1; r < n; r++) if (Math.abs(M[r][i]) > Math.abs(M[piv][i])) piv = r;
+      [M[i], M[piv]] = [M[piv], M[i]]; [v[i], v[piv]] = [v[piv], v[i]];
+      if (Math.abs(M[i][i]) < 1e-9) continue;
+      for (let r = 0; r < n; r++) {
+        if (r === i) continue;
+        const k = M[r][i] / M[i][i];
+        for (let c = i; c < n; c++) M[r][c] -= k * M[i][c];
+        v[r] -= k * v[i];
+      }
+    }
+    const sol = v.map((val, i) => (Math.abs(M[i][i]) < 1e-9 ? 0 : val / M[i][i]));
+    x = foods.map(() => 0);
+    active.forEach((idx, i) => { x[idx] = sol[i]; });
+    const worst = active.reduce((w, idx) => (x[idx] < (w === null ? 0 : x[w]) ? idx : w), null);
+    if (worst === null) break;
+    active = active.filter((i) => i !== worst);
+    x[worst] = 0;
+  }
+  return x.map((g) => Math.max(0, g));
+}
+
+function roundPortion(fd, grams) {
+  if (fd.unit) {
+    const [g, , , step] = fd.unit;
+    const units = Math.round(grams / g / step) * step;
+    return units * g;
+  }
+  return grams < 5 ? 0 : Math.round(grams / 5) * 5;
+}
+
+function portionLabel(fd, grams) {
+  if (fd.unit) {
+    const [g, one, many] = fd.unit;
+    const u = grams / g;
+    const whole = Math.floor(u), half = u - whole >= 0.5;
+    const num = (whole ? whole : "") + (half ? "½" : "") || "0";
+    return `${num} ${u > 1 ? many : one}`;
+  }
+  return S.unit === "lb" ? `${grams} g (${(grams / 28.35).toFixed(1)} oz)` : `${grams} g`;
+}
+
+function planDay(n, diet, seed) {
+  const target = { p: n.protein, c: n.carbs, f: n.fat };
+  const meals = MEALS.map((meal, i) => {
+    const opts = meal.options[diet] || meal.options.any;
+    const opt = opts[((seed >> i) & 1) % opts.length];
+    const want = { p: target.p * meal.share, c: target.c * meal.share, f: target.f * meal.share };
+    const items = opt.fixed.map(([id, g]) => ({ id, g }));
+    items.forEach(({ id, g }) => { const fd = FOODS[id]; want.p -= fd.p * g / 100; want.c -= fd.c * g / 100; want.f -= fd.f * g / 100; });
+    const ids = [opt.p, opt.c, opt.f];
+    const grams = solvePortions(ids.map((id) => FOODS[id]), want);
+    ids.forEach((id, k) => { const g = roundPortion(FOODS[id], grams[k]); if (g > 0) items.unshift({ id, g }); });
+    const order = (id) => (ids.includes(id) ? ids.indexOf(id) : 9);
+    items.sort((a, b) => order(a.id) - order(b.id));
+    const tot = items.reduce((t, { id, g }) => { const fd = FOODS[id]; t.p += fd.p * g / 100; t.c += fd.c * g / 100; t.f += fd.f * g / 100; return t; }, { p: 0, c: 0, f: 0 });
+    tot.kcal = tot.p * 4 + tot.c * 4 + tot.f * 9;
+    return { name: meal.name, title: opt.title, items, tot };
+  });
+  const day = meals.reduce((t, m) => ({ p: t.p + m.tot.p, c: t.c + m.tot.c, f: t.f + m.tot.f, kcal: t.kcal + m.tot.kcal }), { p: 0, c: 0, f: 0, kcal: 0 });
+  return { meals, day };
+}
+
+function viewFoods(n) {
+  const diet = S.body.diet || "any";
+  const r = Math.round;
+  const { meals, day } = planDay(n, diet, ui.mealSeed || 0);
+  const allowed = Object.values(FOODS).filter((fd) => DIET_RANK[fd.diet] >= DIET_RANK[diet]);
+  const groups = ["Protein", "Carbs", "Fats", "Fruit & veg"];
+  const perMeal = r(n.protein / 4);
+  return `
+  <section class="block">
+    <div class="spread"><h2 class="h">What to eat</h2><button class="btn small" data-action="shuffle-meals">Show another day</button></div>
+    <p class="lede">A sample day built to hit your targets. Portions are scaled to your numbers; swap in any food from the list below with similar macros.</p>
+    ${field("Diet", seg("body", "diet", diet, [["any", "Everything"], ["vegetarian", "Vegetarian"], ["vegan", "Vegan"]]))}
+    <div class="meals">
+      ${meals.map((m) => `
+        <div class="card meal">
+          <div class="spread"><span class="label">${m.name}</span><span class="num muted" style="font-size:13px">${r(m.tot.kcal)} kcal · ${r(m.tot.p)} g protein</span></div>
+          <span class="h3">${m.title}</span>
+          <ul class="meal-items">${m.items.map(({ id, g }) => `<li><span class="num">${portionLabel(FOODS[id], g)}</span><span>${FOODS[id].name}</span></li>`).join("")}</ul>
+        </div>`).join("")}
+    </div>
+    <div class="card day-total">
+      <span class="label">Day total vs target</span>
+      <div class="macro-grid">
+        <div class="macro"><span class="label">Calories</span><span class="num">${r(day.kcal)}<small class="muted"> / ${r(n.cal / 10) * 10}</small></span></div>
+        <div class="macro"><span class="label">Protein</span><span class="num">${r(day.p)}<small class="muted"> / ${r(n.protein)} g</small></span></div>
+        <div class="macro"><span class="label">Fat</span><span class="num">${r(day.f)}<small class="muted"> / ${r(n.fat)} g</small></span></div>
+        <div class="macro"><span class="label">Carbs</span><span class="num">${r(day.c)}<small class="muted"> / ${r(n.carbs)} g</small></span></div>
+      </div>
+    </div>
+  </section>
+  <section class="block">
+    <h2 class="h">Foods that fit your plan</h2>
+    <p class="lede">Aim for about ${perMeal} g of protein in each of 4 meals. Build each plate from one protein, one carb, a small amount of fat, and a fist or two of vegetables.</p>
+    <div class="food-groups">
+      ${groups.map((gname) => {
+        const list = allowed.filter((fd) => fd.group === gname);
+        return list.length ? `<div class="card food-group"><span class="h3">${gname}</span>
+          <ul class="food-list">${list.map((fd) => {
+            const per = fd.unit ? fd.unit[0] : 100;
+            const label = fd.unit ? `per ${fd.unit[1]}` : "per 100 g";
+            return `<li><span>${fd.name}</span><span class="num muted">${r(kcal100(fd) * per / 100)} kcal · ${(fd.p * per / 100).toFixed(fd.p * per / 100 < 10 ? 1 : 0)} g P <small>${label}</small></span></li>`;
+          }).join("")}</ul></div>` : "";
+      }).join("")}
+    </div>
+    <p class="muted" style="font-size:14px">Weigh meat, rice, pasta and potatoes cooked; oats dry. Nutrition values are typical averages and vary by brand.</p>
+  </section>`;
+}
+
 function viewFuel() {
   const b = S.body, p = S.profile, n = nutrition();
   const r = (x) => Math.round(x);
@@ -576,6 +817,7 @@ function viewFuel() {
       </div>
     </div>
   </section>
+  ${viewFoods(n)}
   <section class="block">
     <h2 class="h">Adjusting</h2>
     <div class="principles">
@@ -601,7 +843,8 @@ function viewLibrary() {
       ${list.length ? list.map(([id, e]) => `
         <details><summary><b>${e.name}</b><span class="muted" style="font-size:14px">${e.muscles.join(" · ")}</span></summary>
           <div class="body"><div class="chips"><span class="chip">${e.gear}</span>${usedIn(id).map((u) => `<span class="chip on">${u} plan</span>`).join("")}</div>
-          <ul class="lib-cues">${e.cues.map((c) => `<li>${c}</li>`).join("")}</ul></div></details>`).join("")
+          <ul class="lib-cues">${e.cues.map((c) => `<li>${c}</li>`).join("")}</ul>
+          <a class="video-link" href="${videoUrl(e)}" target="_blank" rel="noopener noreferrer">▶ Watch how to do it</a></div></details>`).join("")
         : `<div class="empty">No exercises match “${esc(ui.libQuery)}”.</div>`}
     </div>
   </section>`;
@@ -975,6 +1218,7 @@ const actions = {
     S.sessions = S.sessions.filter((s) => s.id !== id); ui.confirm = null; persist(false); render(); toast("Workout removed.");
   },
   "clear-examples"() { dropExamples(); save(); render(); toast("Examples removed."); },
+  "shuffle-meals"() { ui.mealSeed = ((ui.mealSeed || 0) + 1) % 16; render(); },
   "lib-muscle"(b) { ui.libMuscle = b.dataset.val; render(); },
   "copy-backup"() {
     const text = JSON.stringify(S);

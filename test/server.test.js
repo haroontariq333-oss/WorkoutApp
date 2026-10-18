@@ -187,6 +187,13 @@ test("normalize drops malformed and example data", () => {
   assert.deepEqual(doc.deleted, { a: 1 });
 });
 
+test("kettlebell equipment and diet preference survive validation", () => {
+  const doc = normalize({ settings: { unit: "kg", profile: { goal: "lose", level: "beginner", equip: "kb", days: 3 }, body: { diet: "vegan" } }, settingsAt: 1 });
+  assert.equal(doc.settings.profile.equip, "kb");
+  assert.equal(doc.settings.body.diet, "vegan");
+  assert.equal(normalize({ settings: { body: { diet: "carnivore" } } }).settings.body.diet, "any");
+});
+
 test("a weigh-in logged after a deletion survives the merge", () => {
   const m = merge({ weights: [{ date: "2026-10-05", kg: 81, at: 10 }] }, { deleted: { "w:2026-10-05": 20 } });
   assert.equal(m.weights.length, 0);
