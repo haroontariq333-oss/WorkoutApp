@@ -1,7 +1,7 @@
 /* Offline support: serves the app shell from cache and refreshes it in the background.
    Bump CACHE when shipping changes so old caches are cleared. */
-const CACHE = "overload-v3";
-const SHELL = ["./", "index.html", "styles.css", "app.js", "merge.js", "manifest.webmanifest",
+const CACHE = "overload-v5";
+const SHELL = ["./", "index.html", "privacy.html", "styles.css", "app.js", "merge.js", "manifest.webmanifest",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-touch-icon.png"];
 const FONT_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
 
@@ -24,12 +24,13 @@ self.addEventListener("fetch", (e) => {
   if (!sameOrigin && !FONT_HOSTS.includes(url.hostname)) return;
 
   e.respondWith(caches.open(CACHE).then(async (cache) => {
-    const cached = (await cache.match(req, { ignoreSearch: sameOrigin })) ||
-      (req.mode === "navigate" ? await cache.match("index.html") : undefined);
+    const cached = await cache.match(req, { ignoreSearch: sameOrigin });
+    // Offline and never cached: open the app itself for page loads.
+    const fallback = async () => cached || (req.mode === "navigate" ? await cache.match("index.html") : undefined) || Response.error();
     const network = fetch(req).then((res) => {
       if (res.ok || res.type === "opaque") cache.put(req, res.clone());
       return res;
-    }).catch(() => cached || Response.error());
+    }).catch(fallback);
     if (cached) { e.waitUntil(network.catch(() => {})); return cached; }
     return network;
   }));

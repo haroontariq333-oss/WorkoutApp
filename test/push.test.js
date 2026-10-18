@@ -112,7 +112,7 @@ function device() {
 
 test("reminder settings are validated and stored", async () => {
   const a = device();
-  await a("signup", { method: "POST", body: { email: "remind@example.com", password: "password123" } });
+  await a("signup", { method: "POST", body: { email: "remind@example.com", password: "password123", acceptedPrivacy: true } });
   assert.equal((await a("reminders")).data, null);
   assert.equal((await a("reminders", { method: "PUT", body: { enabled: true, days: [], time: "18:00", tz: "UTC" } })).status, 400);
   assert.equal((await a("reminders", { method: "PUT", body: { enabled: true, days: [1], time: "25:00", tz: "UTC" } })).status, 400);
@@ -126,7 +126,7 @@ test("reminder settings are validated and stored", async () => {
 
 test("subscriptions are validated", async () => {
   const a = device();
-  await a("signup", { method: "POST", body: { email: "subs@example.com", password: "password123" } });
+  await a("signup", { method: "POST", body: { email: "subs@example.com", password: "password123", acceptedPrivacy: true } });
   const b = fakeBrowser();
   assert.equal((await a("push/subscribe", { method: "POST", body: { subscription: { endpoint: "not a url", keys: b.keys } } })).status, 400);
   assert.equal((await a("push/subscribe", { method: "POST", body: { subscription: { endpoint: pushBase + "/x", keys: { p256dh: "short", auth: b.keys.auth } } } })).status, 400);
@@ -138,8 +138,8 @@ test("due reminders are sent once per day, encrypted, and skipped after training
   const now = new Date("2026-10-19T17:05:00Z"); // Monday 17:05 UTC
   const lifter = device(), rested = device();
   const b1 = fakeBrowser(), b2 = fakeBrowser();
-  await lifter("signup", { method: "POST", body: { email: "due@example.com", password: "password123" } });
-  await rested("signup", { method: "POST", body: { email: "trained@example.com", password: "password123" } });
+  await lifter("signup", { method: "POST", body: { email: "due@example.com", password: "password123", acceptedPrivacy: true } });
+  await rested("signup", { method: "POST", body: { email: "trained@example.com", password: "password123", acceptedPrivacy: true } });
   assert.equal((await lifter("push/subscribe", { method: "POST", body: { subscription: { endpoint: pushBase + "/sub/lifter", keys: b1.keys } } })).status, 200);
   await rested("push/subscribe", { method: "POST", body: { subscription: { endpoint: pushBase + "/sub/rested", keys: b2.keys } } });
   await lifter("reminders", { method: "PUT", body: { enabled: true, days: [1, 3], time: "17:00", tz: "UTC" } });

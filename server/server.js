@@ -9,12 +9,15 @@ const { promisify } = require("node:util");
 const { DatabaseSync } = require("node:sqlite");
 const { normalize, merge, emptyDoc } = require("../public/merge.js");
 const push = require("./push.js");
+const { createMailer, buildEmail } = require("./email.js");
 
 const scrypt = promisify(crypto.scrypt);
 const SESSION_DAYS = 90;
 const COOKIE = "ovl_session";
 const MAX_BODY = 2 * 1024 * 1024;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const VERIFY_HOURS = 48;
+const RESET_MINUTES = 60;
 
 const MIME = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
@@ -96,6 +99,12 @@ function openDb(dataDir) {
       auth TEXT NOT NULL,
       created_at INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS email_tokens (
+      token_hash TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      purpose TEXT NOT NULL,
+      expires_at INTEGER NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS reminders (
       user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
       enabled INTEGER NOT NULL,
@@ -105,6 +114,10 @@ function openDb(dataDir) {
       last_sent TEXT
     );
   `);
+  const cols = db.prepare("PRAGMA table_info(users)").all().map((c) => c.name);
+  // Accounts created before email verification existed count as verified; new sign-ups set it explicitly.
+  if (!cols.includes("email_verified")) db.exec("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 1");
+  if (!cols.includes("privacy_accepted_at")) db.exec("ALTER TABLE users ADD COLUMN privacy_accepted_at INTEGER");
   return db;
 }
 
@@ -118,17 +131,33 @@ function createServer(opts = {}) {
   const vapidSubject = opts.vapidSubject || process.env.VAPID_SUBJECT || "mailto:admin@example.com";
   const db = openDb(dataDir);
   const vapid = push.loadVapidKeys(dataDir);
+  const mailer = createMailer(opts);
+  // Links in emails always use the configured address, never the request's Host header.
+  const appUrl = String(opts.appUrl || process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, "");
+  const privacyContact = process.env.PRIVACY_CONTACT || (vapidSubject.startsWith("mailto:") && !vapidSubject.endsWith("@example.com") ? vapidSubject.slice(7) : "");
+  const operatorName = process.env.OPERATOR_NAME || "the operator of this app";
+  if (!mailer.enabled && !opts.quiet) console.warn("Email is not configured: sign-ups won't need verification and password reset is off. See README.");
   const loginLimit = limiter(10, 15 * 60 * 1000);
   const signupLimit = limiter(20, 60 * 60 * 1000);
+  const forgotIpLimit = limiter(10, 60 * 60 * 1000);
+  const emailLimit = limiter(3, 60 * 60 * 1000); // per address: verification resends and reset requests
   // A real hash to compare against when the email doesn't exist, so timing doesn't reveal accounts.
   const dummyHash = hashPassword(crypto.randomBytes(16).toString("hex"));
 
   const q = {
-    userByEmail: db.prepare("SELECT id, email, pass_hash FROM users WHERE email = ?"),
-    insertUser: db.prepare("INSERT INTO users (email, pass_hash, created_at) VALUES (?, ?, ?)"),
+    userByEmail: db.prepare("SELECT id, email, pass_hash, email_verified FROM users WHERE email = ?"),
+    userById: db.prepare("SELECT id, email, email_verified FROM users WHERE id = ?"),
+    insertUser: db.prepare("INSERT INTO users (email, pass_hash, created_at, email_verified, privacy_accepted_at) VALUES (?, ?, ?, ?, ?)"),
+    setPassword: db.prepare("UPDATE users SET pass_hash = ? WHERE id = ?"),
+    setVerified: db.prepare("UPDATE users SET email_verified = 1 WHERE id = ?"),
     insertToken: db.prepare("INSERT INTO auth_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?)"),
-    userByToken: db.prepare(`SELECT u.id, u.email, u.pass_hash FROM auth_tokens t JOIN users u ON u.id = t.user_id
+    userByToken: db.prepare(`SELECT u.id, u.email, u.pass_hash, u.email_verified FROM auth_tokens t JOIN users u ON u.id = t.user_id
                              WHERE t.token_hash = ? AND t.expires_at > ?`),
+    deleteUserTokens: db.prepare("DELETE FROM auth_tokens WHERE user_id = ?"),
+    insertEmailToken: db.prepare("INSERT INTO email_tokens (token_hash, user_id, purpose, expires_at) VALUES (?, ?, ?, ?)"),
+    getEmailToken: db.prepare("SELECT user_id, expires_at FROM email_tokens WHERE token_hash = ? AND purpose = ?"),
+    deleteEmailTokens: db.prepare("DELETE FROM email_tokens WHERE user_id = ? AND purpose = ?"),
+    deleteExpiredEmailTokens: db.prepare("DELETE FROM email_tokens WHERE expires_at <= ?"),
     deleteToken: db.prepare("DELETE FROM auth_tokens WHERE token_hash = ?"),
     deleteExpired: db.prepare("DELETE FROM auth_tokens WHERE expires_at <= ?"),
     getDoc: db.prepare("SELECT doc FROM docs WHERE user_id = ?"),
@@ -184,8 +213,8 @@ function createServer(opts = {}) {
 
   const sweeper = setInterval(() => {
     q.deleteExpired.run(Date.now());
-    loginLimit.sweep();
-    signupLimit.sweep();
+    q.deleteExpiredEmailTokens.run(Date.now());
+    [loginLimit, signupLimit, forgotIpLimit, emailLimit].forEach((l) => l.sweep());
   }, 60 * 60 * 1000);
   sweeper.unref();
 
@@ -262,6 +291,35 @@ function createServer(opts = {}) {
     return { email, password };
   }
 
+  /* ---------- Email links ---------- */
+  // Single-use tokens; only their hashes are stored. Issuing a new one cancels older ones of the same kind.
+  function issueEmailToken(userId, purpose, ttlMs) {
+    const token = crypto.randomBytes(32).toString("base64url");
+    q.deleteEmailTokens.run(userId, purpose);
+    q.insertEmailToken.run(sha256(token), userId, purpose, Date.now() + ttlMs);
+    return token;
+  }
+  function redeemEmailToken(token, purpose) {
+    if (typeof token !== "string" || token.length < 20 || token.length > 100) return null;
+    const row = q.getEmailToken.get(sha256(token), purpose);
+    if (!row) return null;
+    q.deleteEmailTokens.run(row.user_id, purpose);
+    return row.expires_at > Date.now() ? row.user_id : null;
+  }
+  async function sendVerification(user) {
+    const link = `${appUrl}/?verify=${issueEmailToken(user.id, "verify", VERIFY_HOURS * 3600000)}`;
+    await mailer.send({ to: user.email, subject: "Confirm your email for Overload", ...buildEmail({
+      heading: "Confirm your email", intro: "Thanks for signing up. Confirm this is your email address to start syncing your training.",
+      button: "Confirm email", link, outro: `This link works for ${VERIFY_HOURS} hours. If you didn't create an account, you can ignore this email.` }) });
+  }
+  async function sendReset(user) {
+    const link = `${appUrl}/?reset=${issueEmailToken(user.id, "reset", RESET_MINUTES * 60000)}`;
+    await mailer.send({ to: user.email, subject: "Reset your Overload password", ...buildEmail({
+      heading: "Reset your password", intro: "Someone asked to reset the password for your Overload account. Choose a new password with the button below.",
+      button: "Choose a new password", link, outro: `This link works for ${RESET_MINUTES} minutes and only once. If you didn't ask for this, ignore this email; your password won't change.` }) });
+  }
+  const validPassword = (pw) => typeof pw === "string" && pw.length >= 8 && pw.length <= 200;
+
   const loadDoc = (userId) => {
     const row = q.getDoc.get(userId);
     return row ? JSON.parse(row.doc) : emptyDoc();
@@ -274,15 +332,22 @@ function createServer(opts = {}) {
 
     if (route === "signup" && method === "POST") {
       if (!signupLimit.take(clientIp(req))) return fail(res, 429, "Too many sign-ups from this network. Try again later.");
-      const { email, password } = readCredentials(await readJson(req));
+      const body = await readJson(req);
+      const { email, password } = readCredentials(body);
       if (!EMAIL_RE.test(email) || email.length > 254) return fail(res, 400, "Enter a valid email address.");
-      if (password.length < 8 || password.length > 200) return fail(res, 400, "Use a password of at least 8 characters.");
+      if (!validPassword(password)) return fail(res, 400, "Use a password of at least 8 characters.");
+      if (body.acceptedPrivacy !== true) return fail(res, 400, "Please agree to the privacy policy to create an account.");
       if (q.userByEmail.get(email)) return fail(res, 409, "An account with this email already exists. Sign in instead.");
       const hash = await hashPassword(password);
+      const verified = mailer.enabled ? 0 : 1;
       let id;
-      try { id = Number(q.insertUser.run(email, hash, Date.now()).lastInsertRowid); }
+      try { id = Number(q.insertUser.run(email, hash, Date.now(), verified, Date.now()).lastInsertRowid); }
       catch (e) { return fail(res, 409, "An account with this email already exists. Sign in instead."); }
-      return send(res, 201, { email }, { "Set-Cookie": startSession(id) });
+      if (!verified) {
+        emailLimit.take(email);
+        try { await sendVerification({ id, email }); } catch (e) { console.error(e); }
+      }
+      return send(res, 201, { email, verified: !!verified }, { "Set-Cookie": startSession(id) });
     }
 
     if (route === "login" && method === "POST") {
@@ -291,7 +356,36 @@ function createServer(opts = {}) {
       const user = email && password ? q.userByEmail.get(email) : null;
       const ok = await verifyPassword(password || "x", user ? user.pass_hash : await dummyHash);
       if (!user || !ok) return fail(res, 401, "Email or password is incorrect.");
-      return send(res, 200, { email: user.email }, { "Set-Cookie": startSession(user.id) });
+      return send(res, 200, { email: user.email, verified: !!user.email_verified }, { "Set-Cookie": startSession(user.id) });
+    }
+
+    if (route === "verify" && method === "POST") {
+      const userId = redeemEmailToken((await readJson(req)).token, "verify");
+      if (!userId) return fail(res, 400, "This confirmation link has expired or was already used. Sign in and send a new one.");
+      q.setVerified.run(userId);
+      return send(res, 200, { email: q.userById.get(userId).email, verified: true });
+    }
+
+    if (route === "password/forgot" && method === "POST") {
+      if (!mailer.enabled) return fail(res, 503, "Password reset by email isn't set up on this server. Contact the app owner.");
+      if (!forgotIpLimit.take(clientIp(req))) return fail(res, 429, "Too many reset requests from this network. Try again later.");
+      const { email } = readCredentials(await readJson(req));
+      const user = EMAIL_RE.test(email) ? q.userByEmail.get(email) : null;
+      // Same answer whether or not the account exists, so this can't be used to discover accounts.
+      if (user && emailLimit.take(email)) { try { await sendReset(user); } catch (e) { console.error(e); } }
+      return send(res, 200, { ok: true });
+    }
+
+    if (route === "password/reset" && method === "POST") {
+      const body = await readJson(req);
+      if (!validPassword(body.password)) return fail(res, 400, "Use a password of at least 8 characters.");
+      const userId = redeemEmailToken(body.token, "reset");
+      if (!userId) return fail(res, 400, "This reset link has expired or was already used. Ask for a new one.");
+      q.setPassword.run(await hashPassword(body.password), userId);
+      q.setVerified.run(userId); // they proved they own the inbox
+      q.deleteUserTokens.run(userId); // sign out every device
+      const u = q.userById.get(userId);
+      return send(res, 200, { email: u.email, verified: true }, { "Set-Cookie": startSession(userId) });
     }
 
     if (route === "logout" && method === "POST") {
@@ -301,8 +395,42 @@ function createServer(opts = {}) {
     }
 
     const user = currentUser(req);
-    if (route === "me" && method === "GET") return send(res, 200, { email: user ? user.email : null });
+    if (route === "me" && method === "GET") {
+      return send(res, 200, { email: user ? user.email : null, verified: user ? !!user.email_verified : false, emailEnabled: mailer.enabled });
+    }
     if (!user) return fail(res, 401, "You're signed out. Sign in to sync.");
+
+    if (route === "verify/resend" && method === "POST") {
+      if (user.email_verified) return send(res, 200, { verified: true });
+      if (!emailLimit.take(user.email)) return fail(res, 429, "We've sent several emails already. Check your spam folder, or try again in an hour.");
+      try { await sendVerification(user); } catch (e) { console.error(e); return fail(res, 502, "The confirmation email couldn't be sent. Try again in a few minutes."); }
+      return send(res, 200, { sent: true });
+    }
+
+    if (route === "password/change" && method === "POST") {
+      const body = await readJson(req);
+      if (!validPassword(body.newPassword)) return fail(res, 400, "Use a new password of at least 8 characters.");
+      if (typeof body.currentPassword !== "string" || !(await verifyPassword(body.currentPassword, user.pass_hash))) {
+        return fail(res, 401, "Your current password is incorrect.");
+      }
+      q.setPassword.run(await hashPassword(body.newPassword), user.id);
+      q.deleteUserTokens.run(user.id); // sign out other devices
+      return send(res, 200, { ok: true }, { "Set-Cookie": startSession(user.id) });
+    }
+
+    if (route === "account/delete" && method === "POST") {
+      const { password } = await readJson(req);
+      if (typeof password !== "string" || !(await verifyPassword(password, user.pass_hash))) {
+        return fail(res, 401, "Password is incorrect.");
+      }
+      q.deleteUser.run(user.id);
+      return send(res, 200, { ok: true }, { "Set-Cookie": sessionCookie("", 0) });
+    }
+
+    // Everything below stores data for the account, which needs a confirmed email.
+    if (!user.email_verified) {
+      return send(res, 403, { error: "Confirm your email to start syncing. Check your inbox for the link.", code: "unverified" });
+    }
 
     if (route === "sync" && method === "GET") return send(res, 200, loadDoc(user.id));
 
@@ -358,16 +486,22 @@ function createServer(opts = {}) {
       return send(res, 200, { enabled: !!body.enabled, days, time: body.time, tz: body.tz });
     }
 
-    if (route === "account/delete" && method === "POST") {
-      const { password } = await readJson(req);
-      if (typeof password !== "string" || !(await verifyPassword(password, user.pass_hash))) {
-        return fail(res, 401, "Password is incorrect.");
-      }
-      q.deleteUser.run(user.id);
-      return send(res, 200, { ok: true }, { "Set-Cookie": sessionCookie("", 0) });
-    }
-
     return fail(res, 404, "Not found.");
+  }
+
+  // The privacy policy names whoever runs this server, filled in from environment settings.
+  function servePrivacy(file, headers, req, res) {
+    const h = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const contact = privacyContact
+      ? `<a href="mailto:${h(privacyContact)}">${h(privacyContact)}</a>`
+      : "the contact address given where you downloaded or opened the app";
+    const html = fs.readFileSync(file, "utf8")
+      .replaceAll("{{OPERATOR}}", h(operatorName))
+      .replaceAll("{{CONTACT}}", contact)
+      .replaceAll("{{APP_URL}}", h(appUrl));
+    delete headers.ETag;
+    res.writeHead(200, headers);
+    res.end(req.method === "HEAD" ? undefined : html);
   }
 
   function serveStatic(req, res, pathname) {
@@ -375,6 +509,7 @@ function createServer(opts = {}) {
     let rel;
     try { rel = decodeURIComponent(pathname); } catch (e) { return fail(res, 400, "Bad path."); }
     if (rel.endsWith("/")) rel += "index.html";
+    if (rel === "/privacy") rel = "/privacy.html";
     const file = path.resolve(publicDir, "." + rel);
     if (!file.startsWith(publicDir + path.sep)) return fail(res, 404, "Not found.");
     fs.stat(file, (err, st) => {
@@ -389,6 +524,7 @@ function createServer(opts = {}) {
         "Referrer-Policy": "no-referrer",
       };
       if (path.basename(file) === "sw.js") headers["Service-Worker-Allowed"] = "/";
+      if (path.basename(file) === "privacy.html") return servePrivacy(file, headers, req, res);
       if (req.headers["if-none-match"] === etag) { res.writeHead(304, headers); return res.end(); }
       res.writeHead(200, { ...headers, "Content-Length": st.size });
       if (req.method === "HEAD") return res.end();

@@ -946,8 +946,9 @@ function toast(msg) {
 }
 
 /* ---------- Accounts & sync ---------- */
-const Sync = { available: false, checked: false, user: null, status: "idle", lastAt: 0, timer: null, inflight: false, again: false };
-let auth = { mode: "signin", error: "", busy: false, deleting: false, deleteError: "" };
+const Sync = { available: false, checked: false, user: null, verified: true, emailEnabled: false, status: "idle", lastAt: 0, timer: null, inflight: false, again: false };
+const freshAuth = () => ({ mode: "signin", error: "", notice: "", busy: false, deleting: false, deleteError: "", changing: false, changeError: "", resetToken: null });
+let auth = freshAuth();
 
 async function api(route, opts = {}) {
   const res = await fetch("api/" + route, {
@@ -958,7 +959,7 @@ async function api(route, opts = {}) {
   });
   let data = null;
   try { data = await res.json(); } catch (e) { /* empty body */ }
-  if (!res.ok) throw Object.assign(new Error((data && data.error) || "The server didn't respond as expected."), { status: res.status });
+  if (!res.ok) throw Object.assign(new Error((data && data.error) || "The server didn't respond as expected."), { status: res.status, code: data && data.code });
   return data;
 }
 
@@ -992,7 +993,7 @@ function setSyncStatus(status) {
   Sync.status = status;
   const chip = document.getElementById("sync-chip");
   if (chip) {
-    const text = { syncing: "Syncing…", ok: "Synced", offline: "Offline", error: "Sync failed" }[status];
+    const text = { syncing: "Syncing…", ok: "Synced", offline: "Offline", error: "Sync failed", unverified: "Confirm email" }[status];
     chip.hidden = !Sync.user || !text;
     chip.textContent = text || "";
     chip.dataset.state = status;
@@ -1005,6 +1006,7 @@ function syncLine() {
   if (Sync.status === "syncing") return "Syncing…";
   if (Sync.status === "offline") return "You're offline. Changes will sync when you reconnect.";
   if (Sync.status === "error") return "Last sync failed. It will retry automatically.";
+  if (!Sync.verified) return "Syncing starts once you confirm your email. Your training is saved on this device until then.";
   if (!Sync.lastAt) return "Not synced yet.";
   const mins = Math.round((Date.now() - Sync.lastAt) / 60000);
   return mins < 1 ? "Synced just now." : `Synced ${mins} min ago.`;
@@ -1018,6 +1020,7 @@ function quietRender() {
 
 async function syncNow() {
   if (!Sync.user) return;
+  if (!Sync.verified) { setSyncStatus("unverified"); return; }
   if (Sync.inflight) { Sync.again = true; return; }
   Sync.inflight = true;
   setSyncStatus("syncing");
@@ -1029,6 +1032,7 @@ async function syncNow() {
     quietRender();
   } catch (e) {
     if (e.status === 401) { setAccount(null); setSyncStatus("idle"); quietRender(); toast("You were signed out. Sign in again to keep syncing."); }
+    else if (e.code === "unverified") { Sync.verified = false; setSyncStatus("unverified"); quietRender(); }
     else setSyncStatus(navigator.onLine === false ? "offline" : "error");
   } finally {
     Sync.inflight = false;
@@ -1056,7 +1060,12 @@ async function connect() {
   try { await api("health"); reachable = true; } catch (e) { /* offline or no server */ }
   if (reachable) {
     Sync.available = true;
-    try { setAccount((await api("me")).email || null); } catch (e) { /* keep the remembered account */ }
+    try {
+      const me = await api("me");
+      setAccount(me.email || null);
+      Sync.verified = me.verified !== false;
+      Sync.emailEnabled = !!me.emailEnabled;
+    } catch (e) { /* keep the remembered account */ }
   } else if (S.account) {
     Sync.available = true;
     Sync.user = S.account;
@@ -1072,7 +1081,7 @@ const DEVICE_ONLY = !location.protocol.startsWith("http") || !!document.querySel
 
 function initSync() {
   if (DEVICE_ONLY) { Sync.checked = true; return; }
-  connect();
+  Sync.ready = connect();
   window.addEventListener("online", () => connect());
   window.addEventListener("offline", () => { if (Sync.user) setSyncStatus("offline"); });
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") syncNow(); });
@@ -1084,13 +1093,25 @@ function viewAccount() {
     return `<div class="card"><div class="field-group"><span class="label">Account</span>
       <p class="muted">Accounts and sync need the Overload server. This copy keeps your data on this device only.</p></div></div>`;
   }
-  if (Sync.user) {
-    return `<div class="card"><div class="field-group"><span class="label">Account</span>
+  if (Sync.user && auth.mode !== "reset") { // a reset link opened while signed in still shows the reset form
+    return `<div class="card" id="account"><div class="field-group"><span class="label">Account</span>
       <p>Signed in as <b>${esc(Sync.user)}</b></p>
+      ${Sync.verified ? "" : `<div class="notice" role="status"><b>Confirm your email</b>
+        <p>We sent a link to ${esc(Sync.user)}. Open it to start syncing. Check your spam folder if you don't see it.</p>
+        <div class="row"><button class="btn small" data-action="resend-verify">Send the email again</button>
+          <button class="btn small ghost" data-action="check-verified">I've confirmed it</button></div></div>`}
+      ${auth.notice ? `<p class="muted" role="status">${esc(auth.notice)}</p>` : ""}
       <p class="muted" id="sync-line">${syncLine()}</p>
-      <div class="row"><button class="btn small" data-action="sync-now">Sync now</button>
+      <div class="row"><button class="btn small" data-action="sync-now" ${Sync.verified ? "" : "disabled"}>Sync now</button>
         <button class="btn small ghost" data-action="sign-out">Sign out</button>
+        ${auth.changing ? "" : `<button class="btn small ghost" data-action="change-password">Change password</button>`}
         ${auth.deleting ? "" : `<button class="btn small ghost danger" data-action="delete-account">Delete account</button>`}</div>
+      ${auth.changing ? `<form class="auth-form" data-form="change-password">
+        <label class="inp"><input id="current-password" type="password" autocomplete="current-password" aria-label="Current password" placeholder="Current password" required><span></span></label>
+        <label class="inp"><input id="new-password" type="password" autocomplete="new-password" aria-label="New password" placeholder="New password (8+ characters)" required minlength="8"><span></span></label>
+        ${auth.changeError ? `<p class="form-error" role="alert">${esc(auth.changeError)}</p>` : ""}
+        <div class="row"><button class="btn small primary" type="submit">Save new password</button><button class="btn small ghost" type="button" data-action="change-cancel">Cancel</button></div>
+      </form>` : ""}
       ${auth.deleting ? `<form class="auth-form" data-form="delete-account">
         <p class="muted">This permanently deletes your account and synced data. Workouts on this device are kept.</p>
         <label class="inp"><input id="delete-password" type="password" autocomplete="current-password" aria-label="Password" placeholder="Enter your password to confirm"><span></span></label>
@@ -1099,37 +1120,130 @@ function viewAccount() {
       </form>` : ""}
     </div></div>`;
   }
-  const signup = auth.mode === "signup";
-  return `<div class="card"><div class="field-group"><span class="label">Account</span>
-    <p class="muted">Sign in to back up your training and sync it between your phone and computer.</p>
-    ${seg("auth-mode", "mode", auth.mode, [["signin", "Sign in"], ["signup", "Create account"]])}
-    <form class="auth-form" data-form="auth">
-      <label class="inp"><input id="auth-email" type="email" autocomplete="email" aria-label="Email" placeholder="Email" required><span></span></label>
-      <label class="inp"><input id="auth-password" type="password" autocomplete="${signup ? "new-password" : "current-password"}" aria-label="Password" placeholder="${signup ? "Password (8+ characters)" : "Password"}" required minlength="${signup ? 8 : 1}"><span></span></label>
-      ${auth.error ? `<p class="form-error" role="alert">${esc(auth.error)}</p>` : ""}
-      <button class="btn primary" type="submit" ${auth.busy ? "disabled" : ""}>${auth.busy ? "Please wait…" : signup ? "Create account" : "Sign in"}</button>
-      ${S.sessions.some((s) => !s.example) ? `<p class="muted" style="font-size:14px">Workouts already on this device will be added to your account.</p>` : ""}
-    </form>
-  </div></div>`;
+  const mode = auth.mode;
+  const error = auth.error ? `<p class="form-error" role="alert">${esc(auth.error)}</p>` : "";
+  const notice = auth.notice ? `<p class="notice" role="status">${esc(auth.notice)}</p>` : "";
+  const emailField = `<label class="inp"><input id="auth-email" type="email" autocomplete="email" aria-label="Email" placeholder="Email" required><span></span></label>`;
+  let body;
+  if (mode === "reset") {
+    body = `<p class="muted">Choose a new password for your account.</p>
+      <form class="auth-form" data-form="reset">
+        <label class="inp"><input id="reset-password" type="password" autocomplete="new-password" aria-label="New password" placeholder="New password (8+ characters)" required minlength="8"><span></span></label>
+        ${error}
+        <button class="btn primary" type="submit" ${auth.busy ? "disabled" : ""}>${auth.busy ? "Please wait…" : "Save new password"}</button>
+        <button class="btn small ghost" type="button" data-action="auth-mode" data-val="signin">Back to sign in</button>
+      </form>`;
+  } else if (mode === "forgot") {
+    body = `<p class="muted">Enter your account email and we'll send you a link to choose a new password.</p>
+      <form class="auth-form" data-form="forgot">
+        ${emailField}${error}${notice}
+        <button class="btn primary" type="submit" ${auth.busy ? "disabled" : ""}>${auth.busy ? "Please wait…" : "Send reset link"}</button>
+        <button class="btn small ghost" type="button" data-action="auth-mode" data-val="signin">Back to sign in</button>
+      </form>`;
+  } else {
+    const signup = mode === "signup";
+    body = `<p class="muted">Sign in to back up your training and sync it between your phone and computer.</p>
+      ${seg("auth-mode", "mode", mode, [["signin", "Sign in"], ["signup", "Create account"]])}
+      <form class="auth-form" data-form="auth">
+        ${emailField}
+        <label class="inp"><input id="auth-password" type="password" autocomplete="${signup ? "new-password" : "current-password"}" aria-label="Password" placeholder="${signup ? "Password (8+ characters)" : "Password"}" required minlength="${signup ? 8 : 1}"><span></span></label>
+        ${signup ? `<label class="check-row"><input id="auth-privacy" type="checkbox" required> <span>I agree to the <a href="privacy.html" target="_blank" rel="noopener">privacy policy</a>.</span></label>` : ""}
+        ${error}${notice}
+        <button class="btn primary" type="submit" ${auth.busy ? "disabled" : ""}>${auth.busy ? "Please wait…" : signup ? "Create account" : "Sign in"}</button>
+        ${signup ? "" : `<button class="btn small ghost" type="button" data-action="auth-mode" data-val="forgot">Forgot your password?</button>`}
+        ${S.sessions.some((x) => !x.example) ? `<p class="muted" style="font-size:14px">Workouts already on this device will be added to your account.</p>` : ""}
+      </form>`;
+  }
+  return `<div class="card" id="account"><div class="field-group"><span class="label">Account</span>${body}</div></div>`;
+}
+
+/* Signs this device into an account returned by the server and starts syncing. */
+async function startAccount(res, message) {
+  setAccount(res.email);
+  Sync.verified = res.verified !== false;
+  dropExamples(); save();
+  auth = freshAuth();
+  render();
+  toast(message);
+  await syncNow();
 }
 
 async function submitAuth(form) {
   const email = form.querySelector("#auth-email").value.trim();
   const password = form.querySelector("#auth-password").value;
-  auth.busy = true; auth.error = ""; render();
+  const signup = auth.mode === "signup";
+  auth.busy = true; auth.error = ""; auth.notice = ""; render();
   try {
-    const res = await api(auth.mode === "signup" ? "signup" : "login", { method: "POST", body: { email, password } });
-    setAccount(res.email);
-    dropExamples(); save();
-    auth = { mode: "signin", error: "", busy: false, deleting: false, deleteError: "" };
-    render();
-    toast(`Signed in as ${res.email}.`);
-    await syncNow();
+    const res = await api(signup ? "signup" : "login", { method: "POST", body: signup ? { email, password, acceptedPrivacy: true } : { email, password } });
+    await startAccount(res, res.verified === false ? `Account created. Check ${res.email} for a link to confirm your email.` : `Signed in as ${res.email}.`);
   } catch (e) {
     auth.busy = false;
     auth.error = e.status ? e.message : "Can't reach the server. Check your connection and try again.";
     render();
     const f = document.getElementById("auth-email"); if (f) f.value = email;
+  }
+}
+
+async function submitForgot(form) {
+  const email = form.querySelector("#auth-email").value.trim();
+  auth.busy = true; auth.error = ""; auth.notice = ""; render();
+  try {
+    await api("password/forgot", { method: "POST", body: { email } });
+    auth.notice = `If there's an account for ${email}, we've sent it a reset link. The link works for 60 minutes.`;
+  } catch (e) {
+    auth.error = e.status ? e.message : "Can't reach the server. Check your connection and try again.";
+  }
+  auth.busy = false; render();
+  const f = document.getElementById("auth-email"); if (f) f.value = email;
+}
+
+async function submitReset(form) {
+  const password = form.querySelector("#reset-password").value;
+  auth.busy = true; auth.error = ""; render();
+  try {
+    const res = await api("password/reset", { method: "POST", body: { token: auth.resetToken, password } });
+    await startAccount(res, "Password changed. You're signed in.");
+  } catch (e) {
+    auth.busy = false;
+    auth.error = e.status ? e.message : "Can't reach the server. Check your connection and try again.";
+    render();
+  }
+}
+
+async function submitChangePassword(form) {
+  const currentPassword = form.querySelector("#current-password").value;
+  const newPassword = form.querySelector("#new-password").value;
+  try {
+    await api("password/change", { method: "POST", body: { currentPassword, newPassword } });
+    auth.changing = false; auth.changeError = ""; render();
+    toast("Password changed. Other devices have been signed out.");
+  } catch (e) {
+    auth.changeError = e.status ? e.message : "Can't reach the server. Try again when you're online.";
+    render();
+  }
+}
+
+/* Handles links from account emails: ?verify=… confirms the email, ?reset=… opens the new-password form. */
+async function handleEmailLinks() {
+  if (DEVICE_ONLY) return;
+  const params = new URLSearchParams(location.search);
+  const verify = params.get("verify"), reset = params.get("reset");
+  if (!verify && !reset) return;
+  try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) { /* ignore */ }
+  if (reset) {
+    auth = { ...freshAuth(), mode: "reset", resetToken: reset };
+    ui.tab = "plan"; render();
+    const el = document.getElementById("account"); if (el) el.scrollIntoView({ block: "center" });
+    return;
+  }
+  try {
+    const res = await api("verify", { method: "POST", body: { token: verify } });
+    await Sync.ready;
+    toast("Email confirmed.");
+    if (Sync.user === res.email) { Sync.verified = true; render(); syncNow(); }
+    else if (!Sync.user) { auth = { ...freshAuth(), notice: "Email confirmed. Sign in to start syncing." }; ui.tab = "plan"; render(); }
+  } catch (e) {
+    toast(e.status ? e.message : "Couldn't confirm your email. Check your connection and open the link again.");
   }
 }
 
@@ -1260,6 +1374,7 @@ function viewReminders() {
   else if (support === "unsupported") body = `<p class="muted">This browser can't show notifications. Try Chrome, Edge, Firefox or Safari.</p>`;
   else if (!Sync.available) body = `<p class="muted">Reminders need the Overload server.</p>`;
   else if (!Sync.user) body = `<p class="muted">Sign in above to turn on reminders. They're sent from your account, so they arrive even when the app is closed.</p>`;
+  else if (!Sync.verified) body = `<p class="muted">Confirm your email to turn on reminders.</p>`;
   else {
     loadReminders();
     const days = remindDays();
@@ -1387,11 +1502,25 @@ const actions = {
     if (Sync.user) { S.deleted = deleted; S.account = Sync.user; }
     ui.confirm = null; persist(true); render(); toast("All data erased.");
   },
-  "auth-mode"(b) { auth.mode = b.dataset.val; auth.error = ""; render(); },
+  "auth-mode"(b) { auth.mode = b.dataset.val; auth.error = ""; auth.notice = ""; render(); },
+  async "resend-verify"() {
+    try { await api("verify/resend", { method: "POST", body: {} }); toast(`Sent. Check ${Sync.user}.`); }
+    catch (e) { toast(e.status ? e.message : "Can't reach the server."); }
+  },
+  async "check-verified"() {
+    try {
+      const me = await api("me");
+      Sync.verified = me.verified !== false;
+      if (Sync.verified) { toast("Email confirmed."); render(); syncNow(); }
+      else toast("Not confirmed yet. Open the link in the email we sent.");
+    } catch (e) { toast("Can't reach the server."); }
+  },
+  "change-password"() { auth.changing = true; auth.changeError = ""; render(); },
+  "change-cancel"() { auth.changing = false; render(); },
   "sync-now"() { syncNow(); },
   async "sign-out"() {
     try { await api("logout", { method: "POST", body: {} }); } catch (e) { /* sign out locally anyway */ }
-    setAccount(null); clearLocalAccountData(); setSyncStatus("idle"); render();
+    setAccount(null); Sync.verified = true; auth = freshAuth(); clearLocalAccountData(); setSyncStatus("idle"); render();
     toast("Signed out. Your data is safe in your account.");
   },
   "delete-account"() { auth.deleting = true; auth.deleteError = ""; render(); },
@@ -1456,6 +1585,9 @@ document.addEventListener("change", (e) => {
 document.addEventListener("submit", (e) => {
   e.preventDefault();
   if (e.target.dataset.form === "auth") { submitAuth(e.target); return; }
+  if (e.target.dataset.form === "forgot") { submitForgot(e.target); return; }
+  if (e.target.dataset.form === "reset") { submitReset(e.target); return; }
+  if (e.target.dataset.form === "change-password") { submitChangePassword(e.target); return; }
   if (e.target.dataset.form === "delete-account") { submitDeleteAccount(e.target); return; }
   if (e.target.dataset.form !== "weigh") return;
   const v = parseFloat(document.getElementById("weigh-in").value.replace(",", "."));
@@ -1474,3 +1606,5 @@ if (VIEWS[hash]) ui.tab = hash;
 render();
 initSync();
 initInstall();
+handleEmailLinks();
+if (DEVICE_ONLY) { const pl = document.getElementById("privacy-link"); if (pl) pl.hidden = true; }

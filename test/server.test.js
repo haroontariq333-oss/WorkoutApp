@@ -65,18 +65,18 @@ test("static files cannot escape the public folder", async () => {
 
 test("sign up, sign in, sign out", async () => {
   const a = device();
-  let r = await a("signup", { method: "POST", body: { email: "Lifter@Example.com", password: "short" } });
+  let r = await a("signup", { method: "POST", body: { email: "Lifter@Example.com", password: "short", acceptedPrivacy: true } });
   assert.equal(r.status, 400);
-  r = await a("signup", { method: "POST", body: { email: "not-an-email", password: "longenough" } });
+  r = await a("signup", { method: "POST", body: { email: "not-an-email", password: "longenough", acceptedPrivacy: true } });
   assert.equal(r.status, 400);
-  r = await a("signup", { method: "POST", body: { email: "Lifter@Example.com", password: "correct horse" } });
+  r = await a("signup", { method: "POST", body: { email: "Lifter@Example.com", password: "correct horse", acceptedPrivacy: true } });
   assert.equal(r.status, 201);
   assert.equal(r.data.email, "lifter@example.com");
   assert.match(r.setCookie, /HttpOnly/);
   assert.match(r.setCookie, /SameSite=Lax/);
   assert.equal((await a("me")).data.email, "lifter@example.com");
 
-  r = await device()("signup", { method: "POST", body: { email: "lifter@example.com", password: "another one" } });
+  r = await device()("signup", { method: "POST", body: { email: "lifter@example.com", password: "another one", acceptedPrivacy: true } });
   assert.equal(r.status, 409);
 
   const b = device();
@@ -114,7 +114,7 @@ test("cross-site and non-JSON writes are blocked", async () => {
 
 test("two devices sync workouts, weigh-ins, deletions and settings", async () => {
   const phone = device(), laptop = device();
-  await phone("signup", { method: "POST", body: { email: "sync@example.com", password: "password123" } });
+  await phone("signup", { method: "POST", body: { email: "sync@example.com", password: "password123", acceptedPrivacy: true } });
   await laptop("login", { method: "POST", body: { email: "sync@example.com", password: "password123" } });
 
   let r = await phone("sync", { method: "PUT", body: {
@@ -142,21 +142,21 @@ test("two devices sync workouts, weigh-ins, deletions and settings", async () =>
   assert.deepEqual(r.data.sessions.map((s) => s.id), ["s2"]);
 
   const other = device();
-  await other("signup", { method: "POST", body: { email: "other@example.com", password: "password123" } });
+  await other("signup", { method: "POST", body: { email: "other@example.com", password: "password123", acceptedPrivacy: true } });
   r = await other("sync");
   assert.equal(r.data.sessions.length, 0, "accounts never see each other's data");
 });
 
 test("delete account requires the password and removes data", async () => {
   const a = device();
-  await a("signup", { method: "POST", body: { email: "bye@example.com", password: "password123" } });
+  await a("signup", { method: "POST", body: { email: "bye@example.com", password: "password123", acceptedPrivacy: true } });
   await a("sync", { method: "PUT", body: { sessions: [session("x1", "2026-10-02")] } });
   assert.equal((await a("account/delete", { method: "POST", body: { password: "nope" } })).status, 401);
   assert.equal((await a("account/delete", { method: "POST", body: { password: "password123" } })).status, 200);
   assert.equal((await a("me")).data.email, null);
   assert.equal((await device()("login", { method: "POST", body: { email: "bye@example.com", password: "password123" } })).status, 401);
   const again = device();
-  assert.equal((await again("signup", { method: "POST", body: { email: "bye@example.com", password: "password123" } })).status, 201);
+  assert.equal((await again("signup", { method: "POST", body: { email: "bye@example.com", password: "password123", acceptedPrivacy: true } })).status, 201);
   assert.equal((await again("sync")).data.sessions.length, 0);
 });
 

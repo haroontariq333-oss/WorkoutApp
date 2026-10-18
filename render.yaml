@@ -1,5 +1,5 @@
 # Render Blueprint: creates the Overload web service with a persistent disk for the database.
-# In Render: New > Blueprint, pick this repository, then fill in VAPID_SUBJECT when asked.
+# In Render: New > Blueprint, pick this repository, then fill in the values it asks for (see README).
 services:
   - type: web
     name: overload
@@ -18,4 +18,16 @@ services:
       - key: TRUST_PROXY
         value: "1"
       - key: VAPID_SUBJECT
+        sync: false
+      # Account emails (verification and password reset): set EMAIL_FROM plus one provider key.
+      - key: EMAIL_FROM
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      # Shown in the privacy policy.
+      - key: OPERATOR_NAME
+        sync: false
+      - key: PRIVACY_CONTACT
         sync: false

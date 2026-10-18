@@ -14,7 +14,7 @@ An evidence-based workout app built around progressive overload, effort measured
 - **Nutrition**: calories and macros from the Mifflin–St Jeor equation, adjusted for your goal. **What to eat** builds a sample day from cheap supermarket staples (eggs, chicken thighs, lean beef or mutton, canned tuna, milk, soya chunks, lentils, beans, whole-wheat flatbread, oats, potatoes, frozen vegetables, peanut butter) with portions scaled to your targets. It supports everything, vegetarian or vegan diets, and adds an extra snack when your calories don't fit in four normal meals. It also lists foods that fit your plan and gives tips for eating on a budget.
 - **Workout reminders**: pick your training days and a time, and get a notification on your phone when it's time to start, even when the app is closed. No reminder is sent on days you've already trained.
 - **Exercises**: 59 exercises with form cues and video links.
-- **Accounts and sync**: sign in with email and password, and your workouts, weigh-ins and settings follow you across devices.
+- **Accounts and sync**: sign up with email and password and confirm your email, and your workouts, weigh-ins and settings follow you across devices. Forgot-password emails, password change, account deletion and a privacy policy are built in.
 - **Installable**: add it to your home screen on iPhone or Android, or install it on desktop. It opens full-screen and works offline.
 
 ## Run it
@@ -35,6 +35,11 @@ Environment variables:
 | `COOKIE_SECURE` | unset | Set to `1` in production (HTTPS) so session cookies are only sent over HTTPS |
 | `TRUST_PROXY` | unset | Set to `1` behind a reverse proxy so rate limiting uses the real client IP |
 | `VAPID_SUBJECT` | `mailto:admin@example.com` | Contact address push services can use to reach you. Set it to your email (`mailto:you@example.com`) |
+| `EMAIL_FROM` | unset | Sender for account emails, e.g. `Overload <you@gmail.com>` |
+| `BREVO_API_KEY` or `RESEND_API_KEY` | unset | API key for the email provider. With `EMAIL_FROM` and one key set, new accounts must confirm their email and password reset is on. Without them, sign-ups skip confirmation and password reset is off |
+| `APP_URL` | Render's address | Public address used in email links, e.g. `https://overload.example.com`. On Render it defaults to the `onrender.com` address; set it if you add your own domain |
+| `OPERATOR_NAME` | "the operator of this app" | Your name or organization, shown in the privacy policy |
+| `PRIVACY_CONTACT` | from `VAPID_SUBJECT` | Email address for privacy questions, shown in the privacy policy |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | generated | Push signing keys. If unset, they're generated once and saved in `DATA_DIR/vapid.json`. Keep them stable, or devices must turn reminders on again |
 
 ## Deploy
@@ -47,10 +52,26 @@ The repo includes `render.yaml`, which sets everything up.
 
 1. Push this code to your default branch on GitHub.
 2. In Render, choose **New → Blueprint** and pick this repository.
-3. When asked for `VAPID_SUBJECT`, enter `mailto:` followed by your email address.
+3. Fill in the values Render asks for:
+   - `VAPID_SUBJECT`: `mailto:` followed by your email address.
+   - `EMAIL_FROM` and `BREVO_API_KEY`: see **Account emails** below. Leave `RESEND_API_KEY` empty if you use Brevo.
+   - `OPERATOR_NAME` and `PRIVACY_CONTACT`: your name and the email address people can contact about their data.
 4. Click **Apply**. Render builds the Docker image, creates a 1 GB disk at `/data` and gives you an `https://….onrender.com` address.
 
 This uses the Starter plan, because free services have no disk and lose data on every restart.
+
+### Account emails
+
+Confirmation and password reset emails go through an email provider's API. Both of these have free plans:
+
+- **Brevo**: 300 emails a day. You can send from an address you already have, such as a Gmail address, after confirming it in Brevo (**Senders, Domains & Dedicated IPs → Senders**). Create an API key under **SMTP & API → API Keys**, then set `EMAIL_FROM=Overload <that-address>` and `BREVO_API_KEY`.
+- **Resend**: 3,000 emails a month, 100 a day. It needs a domain you own, verified in Resend. Set `EMAIL_FROM=Overload <hello@yourdomain.com>` and `RESEND_API_KEY`.
+
+Emails from a free Gmail address are more likely to land in spam than emails from your own domain. Tell users to check their spam folder; the app says this too.
+
+### Privacy policy
+
+The policy is at `/privacy` and is linked from the app's footer and the sign-up form. New accounts must agree to it. The server fills in `OPERATOR_NAME`, `PRIVACY_CONTACT` and your app's address. Read it and adjust `public/privacy.html` if you add features that collect more data. It's a reasonable starting point, not legal advice.
 
 ### Any Docker host
 
@@ -72,6 +93,18 @@ All accounts and workouts are in `/data/overload.db`. Turn on disk snapshots at 
 
 - **iPhone (Safari)**: open the site, tap **Share**, then **Add to Home Screen**.
 - **Android (Chrome)**: open the site and tap **Install app** in the header, or choose **Install app** from the browser menu.
+
+## Publish it as a downloadable app
+
+**Free, works today:** the app is a Progressive Web App. Once it's live, people install it from the website, with no app store:
+
+- **Android**: Chrome shows **Install app**, which adds a real app icon and opens full-screen.
+- **iPhone and iPad**: in Safari, **Share → Add to Home Screen**. This is the only free way onto iPhones; reminders work this way too (iOS 16.4 or newer).
+- **Windows, Mac and ChromeOS**: Chrome and Edge show an install button in the address bar.
+
+**Free Android APK file:** [PWABuilder](https://www.pwabuilder.com) packages your live site as an Android app (a Trusted Web Activity) that you can offer as a download on your website. Enter your app's address, choose **Android**, download the package, and upload the `.apk` to your site. Keep the signing key it gives you; you need it for every update. For the app to open without a browser bar, add the `assetlinks.json` file PWABuilder generates to `public/.well-known/`. Note that Google is rolling out developer verification for Android apps installed from outside the Play Store: free "limited distribution" accounts cover up to 20 devices, and wider distribution will need a verified developer account.
+
+**App stores (not free):** Google Play has a one-time US$25 registration fee and accepts the same PWABuilder package (as an `.aab`). Apple's App Store needs the Apple Developer Program at US$99 a year.
 
 ## How reminders work
 
