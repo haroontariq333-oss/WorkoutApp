@@ -446,8 +446,12 @@ function viewPlan() {
       ${field("Units", seg("unit", "unit", S.unit, [["kg", "Kilograms"], ["lb", "Pounds"]]))}
       ${viewInstall()}
       <div class="field-group"><span class="label">Backup</span>
-        <p class="muted">${Sync.user ? "Your data is saved to your account. You can also copy a backup as text." : "Your data stays in this browser. Copy a backup to keep it safe or move it to another device."}</p>
-        <div class="row"><button class="btn small" data-action="copy-backup">Copy backup</button></div>
+        <p class="muted">${Sync.user ? "Your data is saved to your account. You can also keep a backup copy." : "Your data stays on this device. Save a backup to keep it safe or move it to another device."}</p>
+        <p class="muted" style="font-size:14px">${backupAge()}</p>
+        <div class="row">
+          ${DEVICE_ONLY ? "" : `<button class="btn small primary" data-action="download-backup">Download backup file</button>
+          <label class="btn small" for="restore-file">Restore from file</label><input id="restore-file" type="file" accept=".json,application/json" data-bind="restore-file" hidden>`}
+          <button class="btn small" data-action="copy-backup">Copy backup as text</button></div>
         <textarea class="backup" id="restore-text" placeholder="Paste a backup here to restore it"></textarea>
         <div class="row"><button class="btn small" data-action="restore">Restore backup</button>
           ${ui.confirm === "reset"
@@ -473,7 +477,7 @@ function viewTrain() {
         <span class="${d.key === next ? "next" : ""}">${d.key === next ? "Next up" : "Day " + (prog.days.indexOf(d) + 1)}</span><b>${d.name}</b></button>`).join("")}
     </div>
     <p class="lede">Tap ✓ to log a set and start your rest timer. Empty fields use the suggested numbers.</p>
-    <div class="row"><button class="btn small ghost" data-action="goto-reminders">⏰ ${Sync.user && Remind.enabled ? `Reminder: ${esc(remindSummary())}` : "Set a workout reminder"}</button></div>
+    <div class="row" ${STATIC_HOST ? "hidden" : ""}><button class="btn small ghost" data-action="goto-reminders">⏰ ${Sync.user && Remind.enabled ? `Reminder: ${esc(remindSummary())}` : "Set a workout reminder"}</button></div>
   </section>
   ${day.slots.map((s) => {
     const ex = EX[s.id], sg = suggest(s);
@@ -1078,9 +1082,12 @@ async function connect() {
 
 // Static copies (opened from disk or hosted without the server) mark themselves device-only.
 const DEVICE_ONLY = !location.protocol.startsWith("http") || !!document.querySelector('meta[name="overload:device-only"]');
+// The GitHub Pages build is a real installable app, but has no server for accounts, sync or reminders.
+const STATIC_HOST = !!document.querySelector('meta[name="overload:static"]');
+const NO_SERVER = DEVICE_ONLY || STATIC_HOST;
 
 function initSync() {
-  if (DEVICE_ONLY) { Sync.checked = true; return; }
+  if (NO_SERVER) { Sync.checked = true; return; }
   Sync.ready = connect();
   window.addEventListener("online", () => connect());
   window.addEventListener("offline", () => { if (Sync.user) setSyncStatus("offline"); });
@@ -1088,6 +1095,10 @@ function initSync() {
 }
 
 function viewAccount() {
+  if (STATIC_HOST) {
+    return `<div class="card"><div class="field-group"><span class="label">Your data</span>
+      <p class="muted">This version saves your training on this device only; nothing is sent anywhere. Download a backup file every week or two (below) so you can restore it if you change or lose your phone.</p></div></div>`;
+  }
   if (!Sync.checked) return "";
   if (!Sync.available) {
     return `<div class="card"><div class="field-group"><span class="label">Account</span>
@@ -1225,7 +1236,7 @@ async function submitChangePassword(form) {
 
 /* Handles links from account emails: ?verify=… confirms the email, ?reset=… opens the new-password form. */
 async function handleEmailLinks() {
-  if (DEVICE_ONLY) return;
+  if (NO_SERVER) return;
   const params = new URLSearchParams(location.search);
   const verify = params.get("verify"), reset = params.get("reset");
   if (!verify && !reset) return;
@@ -1367,6 +1378,7 @@ async function saveReminders(enabled) {
 }
 
 function viewReminders() {
+  if (STATIC_HOST) return "";
   const support = remindSupport();
   let body;
   if (support === "device-only") body = `<p class="muted">Reminders need the installed app with an account.</p>`;
@@ -1392,6 +1404,23 @@ function viewReminders() {
       </div>`;
   }
   return `<div class="card" id="reminders"><div class="field-group"><span class="label">Workout reminders</span>${body}</div></div>`;
+}
+
+/* ---------- Backups ---------- */
+function backupText() { return JSON.stringify({ ...S, drafts: {} }); }
+function markBackedUp() { S.lastBackupAt = Date.now(); save(); render(); }
+function backupAge() {
+  if (!S.lastBackupAt) return S.sessions.some((x) => !x.example) ? "No backup saved yet." : "";
+  const days = Math.floor((Date.now() - S.lastBackupAt) / 86400000);
+  return `Last backup: ${days === 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`}.`;
+}
+function restoreFrom(text) {
+  try {
+    const data = JSON.parse(text);
+    if (!data || !Array.isArray(data.sessions) || !data.profile) return false;
+    S = Object.assign(defaults(), data, { drafts: {}, account: Sync.user }); persist(true); render(); toast("Backup restored.");
+    return true;
+  } catch (e) { return false; }
 }
 
 /* ---------- Actions ---------- */
@@ -1481,17 +1510,19 @@ const actions = {
   "shuffle-meals"() { ui.mealSeed = ((ui.mealSeed || 0) + 1) % 16; render(); },
   "lib-muscle"(b) { ui.libMuscle = b.dataset.val; render(); },
   "copy-backup"() {
-    const text = JSON.stringify(S);
+    const text = backupText();
     const ta = document.getElementById("restore-text");
-    navigator.clipboard.writeText(text).then(() => toast("Backup copied."), () => { ta.value = text; ta.select(); toast("Copy the selected text to save your backup."); });
+    navigator.clipboard.writeText(text).then(() => { markBackedUp(); toast("Backup copied."); }, () => { ta.value = text; ta.select(); toast("Copy the selected text to save your backup."); });
+  },
+  "download-backup"() {
+    const url = URL.createObjectURL(new Blob([backupText()], { type: "application/json" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: `overload-backup-${isoDate(new Date())}.json` });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    markBackedUp(); toast("Backup file saved to your downloads.");
   },
   restore() {
-    const ta = document.getElementById("restore-text");
-    try {
-      const data = JSON.parse(ta.value);
-      if (!data || !Array.isArray(data.sessions) || !data.profile) throw new Error("bad");
-      S = Object.assign(defaults(), data, { drafts: {}, account: Sync.user }); persist(true); render(); toast("Backup restored.");
-    } catch (e) { toast("That isn't a valid backup. Paste the full text you copied."); }
+    if (!restoreFrom(document.getElementById("restore-text").value)) toast("That isn't a valid backup. Paste the full text you copied.");
   },
   reset() { ui.confirm = "reset"; render(); },
   "reset-yes"() {
@@ -1579,6 +1610,13 @@ document.addEventListener("input", (e) => {
 });
 document.addEventListener("change", (e) => {
   const t = e.target;
+  if (t.dataset.bind === "restore-file" && t.files && t.files[0]) {
+    const reader = new FileReader();
+    reader.onload = () => { if (!restoreFrom(String(reader.result))) toast("That file isn't an Overload backup."); };
+    reader.readAsText(t.files[0]);
+    t.value = "";
+    return;
+  }
   if (t.dataset.bind === "trend") { ui.trendEx = t.value; render(); }
   if (["age", "height", "bodyweight"].includes(t.dataset.bind)) render();
 });
@@ -1607,4 +1645,6 @@ render();
 initSync();
 initInstall();
 handleEmailLinks();
-if (DEVICE_ONLY) { const pl = document.getElementById("privacy-link"); if (pl) pl.hidden = true; }
+if (NO_SERVER) { const pl = document.getElementById("privacy-link"); if (pl) pl.hidden = true; }
+// With no server copy, ask the browser not to clear this app's storage when space runs low.
+if (STATIC_HOST && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});

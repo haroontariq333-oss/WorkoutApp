@@ -104,6 +104,12 @@ All accounts and workouts are in `/data/overload.db`. Turn on disk snapshots at 
 - **iPhone (Safari)**: open the site, tap **Share**, then **Add to Home Screen**.
 - **Android (Chrome)**: open the site and tap **Install app** in the header, or choose **Install app** from the browser menu.
 
+## Free hosting on GitHub Pages (no server)
+
+For personal use you can skip the server. The workflow in `.github/workflows/pages.yml` builds a server-free version (`node scripts/build-static.js`) and publishes it to GitHub Pages on every push. Everything works on your phone, including offline use; accounts, sync between devices and reminders are hidden because they need the server. Your training is saved on the device, so use **Plan → Settings → Download backup file** regularly.
+
+One-time setup: in the repository, open **Settings → Pages**, set **Source** to **GitHub Actions**, then re-run the "Publish app to GitHub Pages" workflow from the **Actions** tab. The app is then at `https://<your-username>.github.io/<repository-name>/`.
+
 ## Publish it as a downloadable app
 
 **Free, works today:** the app is a Progressive Web App. Once it's live, people install it from the website, with no app store:
