@@ -1,6 +1,6 @@
 /* Offline support: serves the app shell from cache and refreshes it in the background.
    Bump CACHE when shipping changes so old caches are cleared. */
-const CACHE = "overload-v2";
+const CACHE = "overload-v3";
 const SHELL = ["./", "index.html", "styles.css", "app.js", "merge.js", "manifest.webmanifest",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-touch-icon.png"];
 const FONT_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
@@ -32,5 +32,29 @@ self.addEventListener("fetch", (e) => {
     }).catch(() => cached || Response.error());
     if (cached) { e.waitUntil(network.catch(() => {})); return cached; }
     return network;
+  }));
+});
+
+/* Workout reminders sent by the server. */
+self.addEventListener("push", (e) => {
+  let msg = {};
+  try { msg = e.data ? e.data.json() : {}; } catch (err) { /* show the default text */ }
+  e.waitUntil(self.registration.showNotification(msg.title || "Time to train", {
+    body: msg.body || "Your workout is ready.",
+    icon: "icons/icon-192.png",
+    badge: "icons/icon-192.png",
+    tag: "workout-reminder",
+    renotify: true,
+    data: { url: msg.url || "./#train" },
+  }));
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = new URL(e.notification.data && e.notification.data.url || "./#train", self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+    const open = wins.find((w) => w.url.startsWith(self.registration.scope));
+    if (open) { open.navigate(url).catch(() => {}); return open.focus(); }
+    return self.clients.openWindow(url);
   }));
 });

@@ -8,6 +8,7 @@ const crypto = require("node:crypto");
 const { promisify } = require("node:util");
 const { DatabaseSync } = require("node:sqlite");
 const { normalize, merge, emptyDoc } = require("../public/merge.js");
+const push = require("./push.js");
 
 const scrypt = promisify(crypto.scrypt);
 const SESSION_DAYS = 90;
@@ -88,6 +89,21 @@ function openDb(dataDir) {
       doc TEXT NOT NULL,
       updated_at INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS push_subs (
+      endpoint TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS reminders (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      enabled INTEGER NOT NULL,
+      days TEXT NOT NULL,
+      time TEXT NOT NULL,
+      tz TEXT NOT NULL,
+      last_sent TEXT
+    );
   `);
   return db;
 }
@@ -98,7 +114,10 @@ function createServer(opts = {}) {
   const publicDir = path.resolve(opts.publicDir || path.join(__dirname, "..", "public"));
   const secureCookies = opts.secureCookies ?? process.env.COOKIE_SECURE === "1";
   const trustProxy = opts.trustProxy ?? process.env.TRUST_PROXY === "1";
+  const pushHostAllowed = opts.pushHostAllowed || push.allowedPushHost;
+  const vapidSubject = opts.vapidSubject || process.env.VAPID_SUBJECT || "mailto:admin@example.com";
   const db = openDb(dataDir);
+  const vapid = push.loadVapidKeys(dataDir);
   const loginLimit = limiter(10, 15 * 60 * 1000);
   const signupLimit = limiter(20, 60 * 60 * 1000);
   // A real hash to compare against when the email doesn't exist, so timing doesn't reveal accounts.
@@ -116,7 +135,52 @@ function createServer(opts = {}) {
     putDoc: db.prepare(`INSERT INTO docs (user_id, doc, updated_at) VALUES (?, ?, ?)
                         ON CONFLICT(user_id) DO UPDATE SET doc = excluded.doc, updated_at = excluded.updated_at`),
     deleteUser: db.prepare("DELETE FROM users WHERE id = ?"),
+    upsertSub: db.prepare(`INSERT INTO push_subs (endpoint, user_id, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?)
+                           ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth`),
+    deleteSub: db.prepare("DELETE FROM push_subs WHERE endpoint = ? AND user_id = ?"),
+    dropSub: db.prepare("DELETE FROM push_subs WHERE endpoint = ?"),
+    subsFor: db.prepare("SELECT endpoint, p256dh, auth FROM push_subs WHERE user_id = ?"),
+    getReminder: db.prepare("SELECT enabled, days, time, tz FROM reminders WHERE user_id = ?"),
+    putReminder: db.prepare(`INSERT INTO reminders (user_id, enabled, days, time, tz) VALUES (?, ?, ?, ?, ?)
+                             ON CONFLICT(user_id) DO UPDATE SET enabled = excluded.enabled, days = excluded.days, time = excluded.time, tz = excluded.tz`),
+    activeReminders: db.prepare("SELECT user_id, days, time, tz, last_sent FROM reminders WHERE enabled = 1"),
+    markSent: db.prepare("UPDATE reminders SET last_sent = ? WHERE user_id = ?"),
   };
+
+  /* ---------- Workout reminders ---------- */
+  const REMINDER = { title: "Time to train", body: "Your workout is ready. Tap to start today's session.", url: "./#train" };
+
+  async function notifyUser(userId, message) {
+    let sent = 0;
+    for (const sub of q.subsFor.all(userId)) {
+      const status = await push.sendPush(sub, message, vapid, vapidSubject);
+      if (status >= 200 && status < 300) sent += 1;
+      else if (status === 404 || status === 410) q.dropSub.run(sub.endpoint); // subscription expired
+    }
+    return sent;
+  }
+
+  // Sends each due reminder once per day, within 30 minutes of its time, unless the user already trained that day.
+  let reminderRun = null;
+  function runReminders(now = new Date()) {
+    if (reminderRun) return reminderRun;
+    reminderRun = (async () => {
+      for (const r of q.activeReminders.all()) {
+        let local;
+        try { local = push.localTime(now, r.tz); } catch (e) { continue; }
+        const [hh, mm] = r.time.split(":").map(Number);
+        const due = hh * 60 + mm;
+        if (!JSON.parse(r.days).includes(local.weekday) || r.last_sent === local.date) continue;
+        if (local.minutes < due || local.minutes >= due + 30) continue;
+        q.markSent.run(local.date, r.user_id);
+        if (loadDoc(r.user_id).sessions.some((s) => s.date === local.date)) continue;
+        await notifyUser(r.user_id, REMINDER);
+      }
+    })().finally(() => { reminderRun = null; });
+    return reminderRun;
+  }
+  const reminderTimer = setInterval(() => { runReminders().catch((e) => console.error(e)); }, opts.reminderIntervalMs || 30000);
+  reminderTimer.unref();
 
   const sweeper = setInterval(() => {
     q.deleteExpired.run(Date.now());
@@ -250,6 +314,50 @@ function createServer(opts = {}) {
       return send(res, 200, merged);
     }
 
+    if (route === "push/key" && method === "GET") return send(res, 200, { publicKey: vapid.publicKey });
+
+    if (route === "push/subscribe" && method === "POST") {
+      const sub = (await readJson(req)).subscription || {};
+      const keys = sub.keys || {};
+      let url;
+      try { url = new URL(sub.endpoint); } catch (e) { return fail(res, 400, "That push subscription isn't valid."); }
+      if ((url.protocol !== "https:" && !opts.allowInsecurePush) || !pushHostAllowed(url.hostname) || sub.endpoint.length > 1000) {
+        return fail(res, 400, "This browser's push service isn't supported.");
+      }
+      const p256dh = typeof keys.p256dh === "string" ? Buffer.from(keys.p256dh, "base64url") : Buffer.alloc(0);
+      const auth = typeof keys.auth === "string" ? Buffer.from(keys.auth, "base64url") : Buffer.alloc(0);
+      if (p256dh.length !== 65 || p256dh[0] !== 4 || auth.length !== 16) return fail(res, 400, "That push subscription isn't valid.");
+      q.upsertSub.run(sub.endpoint, user.id, keys.p256dh, keys.auth, Date.now());
+      return send(res, 200, { ok: true });
+    }
+
+    if (route === "push/unsubscribe" && method === "POST") {
+      const { endpoint } = await readJson(req);
+      if (typeof endpoint === "string") q.deleteSub.run(endpoint, user.id);
+      return send(res, 200, { ok: true });
+    }
+
+    if (route === "push/test" && method === "POST") {
+      const sent = await notifyUser(user.id, { title: "Reminders are on", body: "This is how your workout reminders will look.", url: "./#train" });
+      if (!sent) return fail(res, 409, "No device is set up for notifications yet. Turn on reminders on this device first.");
+      return send(res, 200, { sent });
+    }
+
+    if (route === "reminders" && method === "GET") {
+      const r = q.getReminder.get(user.id);
+      return send(res, 200, r ? { enabled: !!r.enabled, days: JSON.parse(r.days), time: r.time, tz: r.tz } : null);
+    }
+
+    if (route === "reminders" && method === "PUT") {
+      const body = await readJson(req);
+      const days = Array.isArray(body.days) ? [...new Set(body.days)].filter((d) => Number.isInteger(d) && d >= 0 && d <= 6).sort() : [];
+      if (!days.length) return fail(res, 400, "Pick at least one day.");
+      if (typeof body.time !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(body.time)) return fail(res, 400, "Pick a time for your reminder.");
+      if (!push.validTimeZone(body.tz)) return fail(res, 400, "Your device's time zone wasn't recognized.");
+      q.putReminder.run(user.id, body.enabled ? 1 : 0, JSON.stringify(days), body.time, body.tz);
+      return send(res, 200, { enabled: !!body.enabled, days, time: body.time, tz: body.tz });
+    }
+
     if (route === "account/delete" && method === "POST") {
       const { password } = await readJson(req);
       if (typeof password !== "string" || !(await verifyPassword(password, user.pass_hash))) {
@@ -299,7 +407,8 @@ function createServer(opts = {}) {
       if (!e.status) console.error(e);
     }
   });
-  server.on("close", () => { clearInterval(sweeper); db.close(); });
+  server.on("close", () => { clearInterval(sweeper); clearInterval(reminderTimer); db.close(); });
+  server.runReminders = runReminders;
   return server;
 }
 

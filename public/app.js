@@ -441,6 +441,7 @@ function viewPlan() {
   <section class="block">
     <h2 class="h">Settings</h2>
     ${viewAccount()}
+    ${viewReminders()}
     <div class="card">
       ${field("Units", seg("unit", "unit", S.unit, [["kg", "Kilograms"], ["lb", "Pounds"]]))}
       ${viewInstall()}
@@ -472,6 +473,7 @@ function viewTrain() {
         <span class="${d.key === next ? "next" : ""}">${d.key === next ? "Next up" : "Day " + (prog.days.indexOf(d) + 1)}</span><b>${d.name}</b></button>`).join("")}
     </div>
     <p class="lede">Tap ✓ to log a set and start your rest timer. Empty fields use the suggested numbers.</p>
+    <div class="row"><button class="btn small ghost" data-action="goto-reminders">⏰ ${Sync.user && Remind.enabled ? `Reminder: ${esc(remindSummary())}` : "Set a workout reminder"}</button></div>
   </section>
   ${day.slots.map((s) => {
     const ex = EX[s.id], sg = suggest(s);
@@ -593,71 +595,69 @@ function nutrition() {
 }
 
 /* ---------- Food suggestions ---------- */
-// Macros per 100 g (USDA-style averages). diet: "any" = meat or fish, "vegetarian" = eggs or dairy, "vegan" = plant-based.
+// Cheap supermarket staples. Macros per 100 g (or 100 ml for milk), typical averages.
+// diet: "any" = meat or fish, "vegetarian" = eggs or dairy, "vegan" = plant-based.
 const FOODS = {
-  chicken: { name: "Chicken breast (cooked)", p: 31, c: 0, f: 3.6, diet: "any", group: "Protein" },
-  beef: { name: "Lean beef mince, 5% fat (cooked)", p: 26, c: 0, f: 7, diet: "any", group: "Protein" },
-  salmon: { name: "Salmon (cooked)", p: 22, c: 0, f: 12, diet: "any", group: "Protein" },
-  tuna: { name: "Tuna, canned in water", p: 26, c: 0, f: 0.8, diet: "any", group: "Protein" },
-  eggs: { name: "Eggs", p: 12.6, c: 0.7, f: 9.5, unit: [50, "egg", "eggs", 1], diet: "vegetarian", group: "Protein" },
-  whites: { name: "Egg whites", p: 11, c: 0.7, f: 0.2, diet: "vegetarian", group: "Protein" },
-  yogurt: { name: "Greek yogurt, 0% fat", p: 10, c: 3.6, f: 0.4, diet: "vegetarian", group: "Protein" },
-  cottage: { name: "Cottage cheese, low fat", p: 12.4, c: 2.7, f: 1, diet: "vegetarian", group: "Protein" },
-  whey: { name: "Whey protein powder", p: 80, c: 8, f: 6, unit: [30, "scoop", "scoops", 0.5], diet: "vegetarian", group: "Protein" },
-  plantpro: { name: "Plant protein powder", p: 78, c: 6, f: 7, unit: [30, "scoop", "scoops", 0.5], diet: "vegan", group: "Protein" },
-  tofu: { name: "Firm tofu", p: 17, c: 3, f: 9, diet: "vegan", group: "Protein" },
-  tempeh: { name: "Tempeh", p: 20, c: 8, f: 11, diet: "vegan", group: "Protein" },
-  edamame: { name: "Edamame (shelled)", p: 11, c: 9, f: 5, diet: "vegan", group: "Protein" },
-  lentils: { name: "Lentils (cooked)", p: 9, c: 20, f: 0.4, diet: "vegan", group: "Carbs" },
-  chickpeas: { name: "Chickpeas (cooked)", p: 8.9, c: 27, f: 2.6, diet: "vegan", group: "Carbs" },
-  rice: { name: "White rice (cooked)", p: 2.7, c: 28, f: 0.3, diet: "vegan", group: "Carbs" },
-  oats: { name: "Rolled oats (dry)", p: 13, c: 68, f: 6.5, diet: "vegan", group: "Carbs" },
-  potato: { name: "Potatoes (boiled)", p: 1.9, c: 20, f: 0.1, diet: "vegan", group: "Carbs" },
-  sweetpotato: { name: "Sweet potato (baked)", p: 2, c: 21, f: 0.2, diet: "vegan", group: "Carbs" },
-  pasta: { name: "Pasta (cooked)", p: 5.8, c: 31, f: 0.9, diet: "vegan", group: "Carbs" },
-  bread: { name: "Whole-wheat bread", p: 13, c: 41, f: 3.4, unit: [35, "slice", "slices", 1], diet: "vegan", group: "Carbs" },
-  banana: { name: "Banana", p: 1.1, c: 23, f: 0.3, unit: [120, "banana", "bananas", 0.5], diet: "vegan", group: "Fruit & veg" },
-  berries: { name: "Berries", p: 0.7, c: 14, f: 0.3, diet: "vegan", group: "Fruit & veg" },
-  veg: { name: "Mixed vegetables", p: 2.4, c: 7, f: 0.4, diet: "vegan", group: "Fruit & veg" },
-  salad: { name: "Salad greens", p: 2.9, c: 3.6, f: 0.4, diet: "vegan", group: "Fruit & veg" },
-  olive: { name: "Olive oil", p: 0, c: 0, f: 100, unit: [13.5, "tbsp", "tbsp", 0.5], diet: "vegan", group: "Fats" },
-  avocado: { name: "Avocado", p: 2, c: 8.5, f: 14.7, diet: "vegan", group: "Fats" },
-  pb: { name: "Peanut butter", p: 25, c: 20, f: 50, unit: [16, "tbsp", "tbsp", 0.5], diet: "vegan", group: "Fats" },
-  almonds: { name: "Almonds", p: 21, c: 22, f: 50, diet: "vegan", group: "Fats" },
+  chicken: { name: "Chicken thighs, skinless (cooked)", p: 24.8, c: 0, f: 8.2, max: 250, min: 90, diet: "any", group: "Protein" },
+  tuna: { name: "Canned tuna in water", p: 26, c: 0, f: 0.8, max: 240, min: 60, unit: [120, "can", "cans", 0.5], diet: "any", group: "Protein" },
+  eggs: { name: "Eggs", p: 12.6, c: 0.7, f: 9.5, max: 200, min: 100, unit: [50, "egg", "eggs", 1], diet: "vegetarian", group: "Protein" },
+  milk: { name: "Milk, semi-skimmed", p: 3.4, c: 4.8, f: 1.8, max: 400, min: 150, unit: [250, "glass", "glasses", 0.5], diet: "vegetarian", group: "Protein" },
+  yogurt: { name: "Plain yogurt, low fat", p: 5.3, c: 7, f: 1.6, max: 300, min: 100, diet: "vegetarian", group: "Protein" },
+  tofu: { name: "Tofu (firm)", p: 15, c: 2.5, f: 8, max: 300, min: 100, diet: "vegan", group: "Protein" },
+  soymilk: { name: "Soy milk", p: 3.3, c: 2.9, f: 1.8, max: 400, min: 150, unit: [250, "glass", "glasses", 0.5], diet: "vegan", group: "Protein" },
+  soya: { name: "Soya chunks (dry)", p: 52, c: 33, f: 0.5, max: 120, min: 30, diet: "vegan", group: "Protein" },
+  lentils: { name: "Lentils (cooked)", p: 9, c: 20, f: 0.4, max: 350, min: 120, diet: "vegan", group: "Beans & lentils" },
+  beans: { name: "Canned beans, drained (kidney or black)", p: 8.7, c: 22.8, f: 0.5, max: 250, min: 80, diet: "vegan", group: "Beans & lentils" },
+  chickpeas: { name: "Canned chickpeas, drained", p: 7, c: 21, f: 2.5, max: 250, diet: "vegan", group: "Beans & lentils" },
+  rice: { name: "White rice (cooked)", p: 2.7, c: 28, f: 0.3, max: 500, min: 75, diet: "vegan", group: "Carbs" },
+  oats: { name: "Rolled oats (dry)", p: 13, c: 68, f: 6.5, max: 150, min: 30, diet: "vegan", group: "Carbs" },
+  potato: { name: "Potatoes (boiled)", p: 1.9, c: 20, f: 0.1, max: 600, min: 100, diet: "vegan", group: "Carbs" },
+  pasta: { name: "Pasta (cooked)", p: 5.8, c: 31, f: 0.9, max: 500, min: 75, diet: "vegan", group: "Carbs" },
+  bread: { name: "Whole-wheat bread", p: 13, c: 41, f: 3.4, max: 140, min: 35, unit: [35, "slice", "slices", 1], diet: "vegan", group: "Carbs" },
+  banana: { name: "Banana", p: 1.1, c: 23, f: 0.3, max: 240, min: 60, unit: [120, "banana", "bananas", 0.5], diet: "vegan", group: "Fruit & veg" },
+  apple: { name: "Apple", p: 0.3, c: 14, f: 0.2, max: 360, unit: [180, "apple", "apples", 1], diet: "vegan", group: "Fruit & veg" },
+  veg: { name: "Frozen mixed vegetables", p: 2.9, c: 13, f: 0.2, max: 300, diet: "vegan", group: "Fruit & veg" },
+  carrots: { name: "Carrots or cabbage", p: 1, c: 8, f: 0.2, max: 200, diet: "vegan", group: "Fruit & veg" },
+  oil: { name: "Vegetable oil", p: 0, c: 0, f: 100, max: 27, unit: [13.5, "tbsp", "tbsp", 0.5], diet: "vegan", group: "Fats" },
+  pb: { name: "Peanut butter", p: 25, c: 20, f: 50, max: 48, unit: [16, "tbsp", "tbsp", 0.5], diet: "vegan", group: "Fats" },
+  peanuts: { name: "Peanuts (roasted)", p: 26, c: 16, f: 49, max: 60, diet: "vegan", group: "Fats" },
 };
+const FOOD_GROUPS = ["Protein", "Beans & lentils", "Carbs", "Fruit & veg", "Fats"];
 const DIET_RANK = { any: 0, vegetarian: 1, vegan: 2 };
 const kcal100 = (f) => f.p * 4 + f.c * 4 + f.f * 9;
 
 // Each meal option names a protein, carb and fat food to scale, plus fixed sides.
 const MEALS = [
   { name: "Breakfast", share: 0.25, options: {
-    any: [{ title: "Yogurt and oat bowl", p: "yogurt", c: "oats", f: "almonds", fixed: [["berries", 100]] },
-          { title: "Egg scramble on toast", p: "whites", c: "bread", f: "avocado", fixed: [["eggs", 50]] }],
-    vegan: [{ title: "Protein oats", p: "plantpro", c: "oats", f: "pb", fixed: [["berries", 100]] },
-            { title: "Tofu scramble on toast", p: "tofu", c: "bread", f: "avocado", fixed: [] }] } },
+    any: [{ title: "Oats with milk and peanut butter", p: "milk", c: "oats", f: "pb", fixed: [["banana", 120]] },
+          { title: "Eggs on toast", p: "eggs", c: "bread", f: "oil", fixed: [] }],
+    vegan: [{ title: "Oats with soy milk and peanut butter", p: "soymilk", c: "oats", f: "pb", fixed: [["banana", 120]] },
+            { title: "Tofu scramble on toast", p: "tofu", c: "bread", f: "oil", fixed: [] }] } },
   { name: "Lunch", share: 0.3, options: {
-    any: [{ title: "Chicken rice bowl", p: "chicken", c: "rice", f: "olive", fixed: [["veg", 150]] },
-          { title: "Tuna pasta salad", p: "tuna", c: "pasta", f: "olive", fixed: [["salad", 80]] }],
-    vegetarian: [{ title: "Egg fried rice", p: "eggs", c: "rice", f: "olive", fixed: [["veg", 150]] },
-                 { title: "Cottage cheese toast and salad", p: "cottage", c: "bread", f: "avocado", fixed: [["salad", 80]] }],
-    vegan: [{ title: "Tempeh rice bowl", p: "tempeh", c: "rice", f: "olive", fixed: [["veg", 150]] },
-            { title: "Tofu and lentil salad", p: "tofu", c: "lentils", f: "olive", fixed: [["salad", 80]] }] } },
+    any: [{ title: "Chicken and rice with vegetables", p: "chicken", c: "rice", f: "oil", fixed: [["veg", 150]] },
+          { title: "Tuna pasta", p: "tuna", c: "pasta", f: "oil", fixed: [["veg", 100]] }],
+    vegetarian: [{ title: "Egg fried rice", p: "eggs", c: "rice", f: "oil", fixed: [["veg", 150]] },
+                 { title: "Soya chunk curry with rice", p: "soya", c: "rice", f: "oil", fixed: [["carrots", 100]] }],
+    vegan: [{ title: "Tofu fried rice", p: "tofu", c: "rice", f: "oil", fixed: [["veg", 150]] },
+            { title: "Soya chunk curry with rice", p: "soya", c: "rice", f: "oil", fixed: [["carrots", 100]] }] } },
   { name: "Dinner", share: 0.3, options: {
-    any: [{ title: "Salmon and potatoes", p: "salmon", c: "potato", f: "olive", fixed: [["veg", 150]] },
-          { title: "Beef and rice", p: "beef", c: "rice", f: "olive", fixed: [["veg", 150]] }],
-    vegetarian: [{ title: "Tofu stir-fry with pasta", p: "tofu", c: "pasta", f: "olive", fixed: [["veg", 150]] },
-                 { title: "Lentil curry with yogurt", p: "yogurt", c: "lentils", f: "olive", fixed: [["veg", 150]] }],
-    vegan: [{ title: "Tofu stir-fry with pasta", p: "tofu", c: "pasta", f: "olive", fixed: [["veg", 150]] },
-            { title: "Tempeh and sweet potato", p: "tempeh", c: "sweetpotato", f: "olive", fixed: [["veg", 150]] }] } },
+    any: [{ title: "Chicken, potatoes and vegetables", p: "chicken", c: "potato", f: "oil", fixed: [["veg", 150]] },
+          { title: "Chicken and bean chili with rice", p: "chicken", c: "rice", f: "oil", fixed: [["beans", 100], ["carrots", 80]] }],
+    vegetarian: [{ title: "Bean and soya chili with rice", p: "soya", c: "rice", f: "oil", fixed: [["beans", 120], ["carrots", 80]] },
+                 { title: "Soya and potato curry", p: "soya", c: "potato", f: "oil", fixed: [["veg", 100]] }],
+    vegan: [{ title: "Bean and soya chili with rice", p: "soya", c: "rice", f: "oil", fixed: [["beans", 120], ["carrots", 80]] },
+            { title: "Tofu and lentil stew", p: "tofu", c: "lentils", f: "oil", fixed: [["carrots", 100]] }] } },
   { name: "Snack", share: 0.15, options: {
-    any: [{ title: "Protein shake and banana", p: "whey", c: "banana", f: "pb", fixed: [] },
-          { title: "Cottage cheese and berries", p: "cottage", c: "berries", f: "almonds", fixed: [] }],
-    vegan: [{ title: "Protein shake and banana", p: "plantpro", c: "banana", f: "pb", fixed: [] },
-            { title: "Edamame and fruit", p: "edamame", c: "banana", f: "almonds", fixed: [] }] } },
+    any: [{ title: "Yogurt, banana and peanuts", p: "yogurt", c: "banana", f: "peanuts", fixed: [] },
+          { title: "Peanut butter toast and milk", p: "milk", c: "bread", f: "pb", fixed: [] }],
+    vegan: [{ title: "Soy milk, banana and peanuts", p: "soymilk", c: "banana", f: "peanuts", fixed: [] },
+            { title: "Peanut butter toast and soy milk", p: "soymilk", c: "bread", f: "pb", fixed: [] }] } },
 ];
+// Planning order: the last meal planned absorbs rounding so the day lands on target.
+const PLAN_ORDER = [0, 3, 1, 2];
 
 /* Non-negative least squares over at most three foods, with errors weighed roughly in calories. */
-function solvePortions(foods, target) {
+function nnls(foods, target) {
   const W = [8, 4, 9]; // protein counts double: missing it matters more than a few calories
   const row = (fd) => [fd.p / 100 * W[0], fd.c / 100 * W[1], fd.f / 100 * W[2]];
   const b = [target.p * W[0], target.c * W[1], target.f * W[2]];
@@ -691,6 +691,27 @@ function solvePortions(foods, target) {
   return x.map((g) => Math.max(0, g));
 }
 
+/* Same, but every food stays within a realistic portion. The protein and carb foods
+   (the first two) keep at least a minimum so the meal still matches its name. */
+function solvePortions(foods, target) {
+  const fixed = foods.map(() => null);
+  let x = foods.map(() => 0);
+  for (let guard = 0; guard <= foods.length; guard++) {
+    const free = foods.map((_, i) => i).filter((i) => fixed[i] === null);
+    const t = { ...target };
+    foods.forEach((fd, i) => { if (fixed[i] !== null) { t.p -= fd.p * fixed[i] / 100; t.c -= fd.c * fixed[i] / 100; t.f -= fd.f * fixed[i] / 100; } });
+    const sol = free.length ? nnls(free.map((i) => foods[i]), t) : [];
+    x = foods.map((_, i) => (fixed[i] !== null ? fixed[i] : sol[free.indexOf(i)]));
+    const lo = (i) => (i < 2 ? foods[i].min || 0 : 0);
+    const over = free.filter((i) => x[i] > foods[i].max).sort((a, b) => x[b] / foods[b].max - x[a] / foods[a].max);
+    const under = free.filter((i) => x[i] < lo(i));
+    if (over.length) fixed[over[0]] = foods[over[0]].max;
+    else if (under.length) fixed[under[0]] = lo(under[0]);
+    else break;
+  }
+  return x.map((g, i) => Math.min(Math.max(g, i < 2 ? foods[i].min || 0 : 0), foods[i].max));
+}
+
 function roundPortion(fd, grams) {
   if (fd.unit) {
     const [g, , , step] = fd.unit;
@@ -711,23 +732,39 @@ function portionLabel(fd, grams) {
   return S.unit === "lb" ? `${grams} g (${(grams / 28.35).toFixed(1)} oz)` : `${grams} g`;
 }
 
+function planMeal(name, opt, want, sideScale) {
+  const items = opt.fixed.map(([id, g]) => ({ id, g: roundPortion(FOODS[id], g * sideScale) })).filter((it) => it.g > 0);
+  const rest = { ...want };
+  items.forEach(({ id, g }) => { const fd = FOODS[id]; rest.p -= fd.p * g / 100; rest.c -= fd.c * g / 100; rest.f -= fd.f * g / 100; });
+  const ids = [opt.p, opt.c, opt.f];
+  const grams = solvePortions(ids.map((id) => FOODS[id]), rest);
+  ids.forEach((id, j) => { const g = roundPortion(FOODS[id], grams[j]); if (g > 0) items.push({ id, g }); });
+  const order = (id) => (ids.includes(id) ? ids.indexOf(id) : 9);
+  items.sort((a, b) => order(a.id) - order(b.id));
+  const tot = items.reduce((t, { id, g }) => { const fd = FOODS[id]; t.p += fd.p * g / 100; t.c += fd.c * g / 100; t.f += fd.f * g / 100; return t; }, { p: 0, c: 0, f: 0 });
+  tot.kcal = tot.p * 4 + tot.c * 4 + tot.f * 9;
+  return { name, title: opt.title, items, tot };
+}
+
 function planDay(n, diet, seed) {
-  const target = { p: n.protein, c: n.carbs, f: n.fat };
-  const meals = MEALS.map((meal, i) => {
+  const left = { p: n.protein, c: n.carbs, f: n.fat };
+  const sideScale = Math.min(1, Math.max(0.6, n.cal / 2400)); // smaller sides on small targets
+  const eat = (m) => { left.p -= m.tot.p; left.c -= m.tot.c; left.f -= m.tot.f; return m; };
+  let shareLeft = 1;
+  const meals = [];
+  PLAN_ORDER.forEach((i) => {
+    const meal = MEALS[i];
     const opts = meal.options[diet] || meal.options.any;
-    const opt = opts[((seed >> i) & 1) % opts.length];
-    const want = { p: target.p * meal.share, c: target.c * meal.share, f: target.f * meal.share };
-    const items = opt.fixed.map(([id, g]) => ({ id, g }));
-    items.forEach(({ id, g }) => { const fd = FOODS[id]; want.p -= fd.p * g / 100; want.c -= fd.c * g / 100; want.f -= fd.f * g / 100; });
-    const ids = [opt.p, opt.c, opt.f];
-    const grams = solvePortions(ids.map((id) => FOODS[id]), want);
-    ids.forEach((id, k) => { const g = roundPortion(FOODS[id], grams[k]); if (g > 0) items.unshift({ id, g }); });
-    const order = (id) => (ids.includes(id) ? ids.indexOf(id) : 9);
-    items.sort((a, b) => order(a.id) - order(b.id));
-    const tot = items.reduce((t, { id, g }) => { const fd = FOODS[id]; t.p += fd.p * g / 100; t.c += fd.c * g / 100; t.f += fd.f * g / 100; return t; }, { p: 0, c: 0, f: 0 });
-    tot.kcal = tot.p * 4 + tot.c * 4 + tot.f * 9;
-    return { name: meal.name, title: opt.title, items, tot };
+    const k = meal.share / shareLeft;
+    shareLeft -= meal.share;
+    meals[i] = eat(planMeal(meal.name, opts[((seed >> i) & 1) % opts.length], { p: left.p * k, c: left.c * k, f: left.f * k }, sideScale));
   });
+  // Big targets don't fit in four normal portions; add a second snack for the rest.
+  const leftKcal = left.p * 4 + left.c * 4 + left.f * 9;
+  if (leftKcal > n.cal * 0.06) {
+    const snack = MEALS[3], opts = snack.options[diet] || snack.options.any;
+    meals.push(eat(planMeal("Extra snack", opts[(((seed >> 3) & 1) + 1) % opts.length], { ...left }, sideScale)));
+  }
   const day = meals.reduce((t, m) => ({ p: t.p + m.tot.p, c: t.c + m.tot.c, f: t.f + m.tot.f, kcal: t.kcal + m.tot.kcal }), { p: 0, c: 0, f: 0, kcal: 0 });
   return { meals, day };
 }
@@ -737,12 +774,12 @@ function viewFoods(n) {
   const r = Math.round;
   const { meals, day } = planDay(n, diet, ui.mealSeed || 0);
   const allowed = Object.values(FOODS).filter((fd) => DIET_RANK[fd.diet] >= DIET_RANK[diet]);
-  const groups = ["Protein", "Carbs", "Fats", "Fruit & veg"];
+  const groups = FOOD_GROUPS;
   const perMeal = r(n.protein / 4);
   return `
   <section class="block">
     <div class="spread"><h2 class="h">What to eat</h2><button class="btn small" data-action="shuffle-meals">Show another day</button></div>
-    <p class="lede">A sample day built to hit your targets. Portions are scaled to your numbers; swap in any food from the list below with similar macros.</p>
+    <p class="lede">A sample day built from cheap supermarket staples, with portions scaled to your targets. Swap in any food from the list below with similar macros.</p>
     ${field("Diet", seg("body", "diet", diet, [["any", "Everything"], ["vegetarian", "Vegetarian"], ["vegan", "Vegan"]]))}
     <div class="meals">
       ${meals.map((m) => `
@@ -761,6 +798,7 @@ function viewFoods(n) {
         <div class="macro"><span class="label">Carbs</span><span class="num">${r(day.c)}<small class="muted"> / ${r(n.carbs)} g</small></span></div>
       </div>
     </div>
+    ${day.p < n.protein * 0.92 ? `<p class="muted" style="font-size:14px">This day is ${Math.round(n.protein - day.p)} g short on protein. Add a glass of ${diet === "vegan" ? "soy milk" : "milk"}, ${diet === "vegan" ? "a portion of tofu" : "a pot of yogurt"}, or a handful of soya chunks, or tap Show another day.</p>` : ""}
   </section>
   <section class="block">
     <h2 class="h">Foods that fit your plan</h2>
@@ -776,7 +814,16 @@ function viewFoods(n) {
           }).join("")}</ul></div>` : "";
       }).join("")}
     </div>
-    <p class="muted" style="font-size:14px">Weigh meat, rice, pasta and potatoes cooked; oats dry. Nutrition values are typical averages and vary by brand.</p>
+    <p class="muted" style="font-size:14px">Weigh meat, rice, pasta and potatoes cooked; oats and soya chunks dry. Nutrition values are typical averages and vary by brand.</p>
+  </section>
+  <section class="block">
+    <h2 class="h">Eating on a budget</h2>
+    <div class="principles">
+      <div class="principle"><b>Buy staples in bulk</b><p>Rice, oats, lentils and dried beans are the cheapest calories in the store and keep for months.</p></div>
+      <div class="principle"><b>Cheap protein</b><p>Eggs, canned tuna, chicken thighs, milk and soya chunks give the most protein for the money. Thighs cost less than breasts.</p></div>
+      <div class="principle"><b>Frozen is fine</b><p>Frozen vegetables are as nutritious as fresh, cost less and don't go off before you use them.</p></div>
+      <div class="principle"><b>Go store-brand</b><p>Own-brand oats, rice, canned beans and peanut butter are usually the same product for less.</p></div>
+    </div>
   </section>`;
 }
 
@@ -995,6 +1042,7 @@ function queueSync() {
 }
 
 function setAccount(email) {
+  if (email !== Sync.user) Remind = { loaded: false, loading: false, enabled: false, days: null, time: "18:00", busy: false, error: "", note: "" };
   Sync.user = email;
   S.account = email;
   save();
@@ -1134,6 +1182,102 @@ function viewInstall() {
   return `<div class="field-group"><span class="label">Install as an app</span>${body}</div>`;
 }
 
+/* ---------- Workout reminders ---------- */
+const DAY_NAMES = [[1, "Mon"], [2, "Tue"], [3, "Wed"], [4, "Thu"], [5, "Fri"], [6, "Sat"], [0, "Sun"]];
+const DEFAULT_DAYS = { 3: [1, 3, 5], 4: [1, 2, 4, 5], 5: [1, 2, 3, 4, 5] };
+let Remind = { loaded: false, loading: false, enabled: false, days: null, time: "18:00", busy: false, error: "", note: "" };
+
+function remindSupport() {
+  if (DEVICE_ONLY) return "device-only";
+  const ok = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  if (ok) return "ok";
+  return isIos() && !isStandalone() ? "ios-install" : "unsupported";
+}
+
+async function loadReminders() {
+  if (Remind.loaded || Remind.loading || !Sync.user || Date.now() - (Remind.failedAt || 0) < 60000) return;
+  Remind.loading = true;
+  try {
+    const r = await api("reminders");
+    if (r) Object.assign(Remind, { enabled: r.enabled, days: r.days, time: r.time });
+    Remind.loaded = true;
+  } catch (e) { Remind.failedAt = Date.now(); /* offline: show defaults, retry in a minute */ }
+  Remind.loading = false;
+  quietRender();
+}
+
+function remindDays() { return Remind.days || DEFAULT_DAYS[S.profile.days]; }
+function remindSummary() {
+  const days = remindDays();
+  const names = DAY_NAMES.filter(([d]) => days.includes(d)).map(([, n]) => n).join(", ");
+  const [h, m] = Remind.time.split(":").map(Number);
+  return `${names} at ${new Date(2000, 0, 1, h, m).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+}
+
+function b64uToBytes(s) {
+  const raw = atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4));
+  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+}
+
+/* Asks for notification permission and registers this device with the server. */
+async function enablePush() {
+  const friendly = (msg) => Object.assign(new Error(msg), { friendly: true });
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") throw friendly("Notifications are blocked for this app. Allow them in your browser or phone settings, then try again.");
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    const { publicKey } = await api("push/key");
+    try {
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uToBytes(publicKey) });
+    } catch (e) {
+      throw friendly("This browser couldn't set up notifications. Private or incognito windows can't receive them; open the installed app or a normal window and try again.");
+    }
+  }
+  await api("push/subscribe", { method: "POST", body: { subscription: sub.toJSON() } });
+}
+
+async function saveReminders(enabled) {
+  Remind.busy = true; Remind.error = ""; Remind.note = ""; render();
+  try {
+    if (enabled) await enablePush();
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const r = await api("reminders", { method: "PUT", body: { enabled, days: remindDays(), time: Remind.time, tz } });
+    Object.assign(Remind, { enabled: r.enabled, days: r.days, time: r.time, loaded: true });
+    Remind.note = enabled ? "Saved." : "Reminders are off.";
+  } catch (e) {
+    Remind.error = e.status || e.friendly ? e.message : "Couldn't reach the server. Check your connection and try again.";
+  }
+  Remind.busy = false; render();
+}
+
+function viewReminders() {
+  const support = remindSupport();
+  let body;
+  if (support === "device-only") body = `<p class="muted">Reminders need the installed app with an account.</p>`;
+  else if (support === "ios-install") body = `<p class="muted">On iPhone, first add Overload to your Home Screen (Share, then Add to Home Screen), then open it from there to turn on reminders.</p>`;
+  else if (support === "unsupported") body = `<p class="muted">This browser can't show notifications. Try Chrome, Edge, Firefox or Safari.</p>`;
+  else if (!Sync.available) body = `<p class="muted">Reminders need the Overload server.</p>`;
+  else if (!Sync.user) body = `<p class="muted">Sign in above to turn on reminders. They're sent from your account, so they arrive even when the app is closed.</p>`;
+  else {
+    loadReminders();
+    const days = remindDays();
+    body = `
+      <p class="muted">${Remind.enabled ? `On: ${esc(remindSummary())}. You won't be reminded on days you've already trained.` : "Get a notification when it's time to start your workout."}</p>
+      <div class="chips" role="group" aria-label="Reminder days">${DAY_NAMES.map(([d, n]) =>
+        `<button class="chip ${days.includes(d) ? "on" : ""}" data-action="remind-day" data-val="${d}" aria-pressed="${days.includes(d)}">${n}</button>`).join("")}</div>
+      <label class="inp time-inp"><input id="remind-time" type="time" data-bind="remind-time" value="${esc(Remind.time)}" aria-label="Reminder time"><span></span></label>
+      ${Remind.error ? `<p class="form-error" role="alert">${esc(Remind.error)}</p>` : ""}
+      ${Remind.note ? `<p class="muted" role="status">${esc(Remind.note)}</p>` : ""}
+      <div class="row">
+        <button class="btn small primary" data-action="remind-save" ${Remind.busy ? "disabled" : ""}>${Remind.busy ? "Saving…" : Remind.enabled ? "Save changes" : "Turn on reminders"}</button>
+        ${Remind.enabled ? `<button class="btn small" data-action="remind-test" ${Remind.busy ? "disabled" : ""}>Send a test</button>
+        <button class="btn small ghost" data-action="remind-off" ${Remind.busy ? "disabled" : ""}>Turn off</button>` : ""}
+      </div>`;
+  }
+  return `<div class="card" id="reminders"><div class="field-group"><span class="label">Workout reminders</span>${body}</div></div>`;
+}
+
 /* ---------- Actions ---------- */
 function draftRow(dayKey, exId, i) {
   const d = (S.drafts[dayKey] = S.drafts[dayKey] || {});
@@ -1257,6 +1401,25 @@ const actions = {
     try { await installPrompt.userChoice; } catch (e) { /* ignore */ }
     installPrompt = null; render();
   },
+  "goto-reminders"() {
+    ui.tab = "plan"; ui.confirm = null; render();
+    const el = document.getElementById("reminders");
+    if (el) el.scrollIntoView({ block: "center" });
+  },
+  "remind-day"(b) {
+    const d = Number(b.dataset.val), days = new Set(remindDays());
+    if (days.has(d)) days.delete(d); else days.add(d);
+    if (!days.size) { toast("Pick at least one day."); return; }
+    Remind.days = [...days].sort(); Remind.note = ""; render();
+  },
+  "remind-save"() { saveReminders(true); },
+  "remind-off"() { saveReminders(false); },
+  async "remind-test"() {
+    Remind.busy = true; Remind.error = ""; Remind.note = ""; render();
+    try { await api("push/test", { method: "POST", body: {} }); Remind.note = "Test sent. It should arrive in a few seconds."; }
+    catch (e) { Remind.error = e.status ? e.message : "Couldn't reach the server."; }
+    Remind.busy = false; render();
+  },
   "timer-add"() { T.end += 15000; T.dur += 15; if (!T.iv) { T.iv = setInterval(tick, 250); } tick(); },
   "timer-stop"() { clearInterval(T.iv); T.iv = null; document.getElementById("timer").hidden = true; },
 };
@@ -1270,6 +1433,7 @@ document.addEventListener("input", (e) => {
   const t = e.target, bind = t.dataset.bind;
   if (!bind) return;
   if (bind === "w" || bind === "r") { draftRow(ui.day, t.dataset.ex, Number(t.dataset.i))[bind] = t.value.replace(",", "."); save(); return; }
+  if (bind === "remind-time") { Remind.time = t.value || "18:00"; Remind.note = ""; return; }
   if (bind === "lib") {
     ui.libQuery = t.value;
     const pos = t.selectionStart; render();

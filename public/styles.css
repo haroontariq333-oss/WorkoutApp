@@ -264,6 +264,8 @@ select.sel { height: 44px; border: 1px solid var(--line); border-radius: 8px; ba
 .sync-chip[data-state="error"], .sync-chip[data-state="offline"] { background: var(--target-soft); color: var(--fg); }
 .auth-form { display: grid; gap: 8px; }
 .auth-form .inp input { padding-right: 12px; font-family: var(--font-body); font-size: 16px; }
+.time-inp { max-width: 180px; }
+.time-inp input { padding-right: 12px; }
 .form-error { color: var(--bad); font-size: 14px; font-weight: 500; }
 .btn:disabled { opacity: 0.6; cursor: progress; }
 textarea.backup { width: 100%; min-height: 90px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 10px; font: 500 12px/1.4 var(--font-mono); }

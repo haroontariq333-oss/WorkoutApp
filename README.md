@@ -11,7 +11,8 @@ An evidence-based workout app built around progressive overload, effort measured
   - **Bodyweight**: only your body and the floor. No bands, bars or furniture.
 - **Train**: logs sets with a rest timer, and you can switch equipment right from the tab. Weights are suggested by double progression: once every set reaches the top of the rep range, the app tells you to add weight. Each exercise has form cues and a **Watch how** link that opens a YouTube search for a form tutorial.
 - **Progress**: logged sets per muscle over the last 7 days, body-weight trend, estimated 1RM trend for each exercise, and workout history.
-- **Nutrition**: calories and macros from the Mifflin–St Jeor equation, adjusted for your goal. **What to eat** builds a sample day of four meals with portions scaled to your targets (everything, vegetarian or vegan), plus a list of foods that fit your plan with calories and protein for each.
+- **Nutrition**: calories and macros from the Mifflin–St Jeor equation, adjusted for your goal. **What to eat** builds a sample day from cheap supermarket staples (eggs, chicken thighs, canned tuna, milk, soya chunks, lentils, beans, rice, oats, potatoes, frozen vegetables, peanut butter) with portions scaled to your targets. It supports everything, vegetarian or vegan diets, and adds an extra snack when your calories don't fit in four normal meals. It also lists foods that fit your plan and gives tips for eating on a budget.
+- **Workout reminders**: pick your training days and a time, and get a notification on your phone when it's time to start, even when the app is closed. No reminder is sent on days you've already trained.
 - **Exercises**: 59 exercises with form cues and video links.
 - **Accounts and sync**: sign in with email and password, and your workouts, weigh-ins and settings follow you across devices.
 - **Installable**: add it to your home screen on iPhone or Android, or install it on desktop. It opens full-screen and works offline.
@@ -33,6 +34,8 @@ Environment variables:
 | `DATA_DIR` | `./data` | Folder for the SQLite database |
 | `COOKIE_SECURE` | unset | Set to `1` in production (HTTPS) so session cookies are only sent over HTTPS |
 | `TRUST_PROXY` | unset | Set to `1` behind a reverse proxy so rate limiting uses the real client IP |
+| `VAPID_SUBJECT` | `mailto:admin@example.com` | Contact address push services can use to reach you. Set it to your email (`mailto:you@example.com`) |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | generated | Push signing keys. If unset, they're generated once and saved in `DATA_DIR/vapid.json`. Keep them stable, or devices must turn reminders on again |
 
 ## Deploy
 
@@ -49,6 +52,16 @@ On Render, Railway or Fly.io, deploy the repo with the included `Dockerfile`, at
 
 - **iPhone (Safari)**: open the site, tap **Share**, then **Add to Home Screen**.
 - **Android (Chrome)**: open the site and tap **Install app** in the header, or choose **Install app** from the browser menu.
+
+## How reminders work
+
+Reminders use the standard Web Push protocol, implemented with Node's built-in crypto. No third-party service account is needed.
+
+1. When you turn reminders on, the device asks for notification permission and registers with its browser's push service (Google, Mozilla, Apple or Microsoft).
+2. The server stores your days, time and time zone.
+3. Every 30 seconds the server checks for reminders that are due. It sends an encrypted notification within 30 minutes of the chosen time, at most once a day, and skips days you've already logged a workout.
+
+On iPhone, notifications work for the app added to the Home Screen (iOS 16.4 or newer), not in a Safari tab. Private or incognito windows can't receive notifications.
 
 ## How sync works
 
