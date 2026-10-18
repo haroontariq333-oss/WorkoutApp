@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Overload Training Log</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Evidence-based program builder, workout logger with progressive overload, nutrition targets and progress tracking.">
+<meta name="theme-color" content="#edf0f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1318" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Overload">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="wrap top">
+  <div class="brand">
+    <div class="plates" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div><h1>Overload</h1><small>Evidence-based training log</small></div>
+  </div>
+  <div class="top-actions">
+    <span class="sync-chip" id="sync-chip" role="status" hidden></span>
+    <button class="btn small" id="install-btn" type="button" data-action="install" hidden>Install app</button>
+  </div>
+</header>
+<nav class="tabs" aria-label="Sections">
+  <div class="wrap" role="tablist">
+    <button role="tab" data-action="tab" data-tab="plan">Plan</button>
+    <button role="tab" data-action="tab" data-tab="train">Train</button>
+    <button role="tab" data-action="tab" data-tab="progress">Progress</button>
+    <button role="tab" data-action="tab" data-tab="fuel">Nutrition</button>
+    <button role="tab" data-action="tab" data-tab="library">Exercises</button>
+  </div>
+</nav>
+<main class="wrap" id="main"></main>
+<footer class="wrap foot">
+  Independent project, not affiliated with or endorsed by any coach or fitness brand. General fitness information only; check with a doctor before starting a new program if you have health concerns.
+</footer>
+<div class="timer" id="timer" hidden>
+  <div class="wrap">
+    <div class="t" id="timer-t">0:00</div>
+    <div class="tl"><small id="timer-label">Rest</small><div class="prog"><i id="timer-bar"></i></div></div>
+    <button type="button" data-action="timer-add">+15s</button>
+    <button type="button" data-action="timer-stop">Skip</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="merge.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

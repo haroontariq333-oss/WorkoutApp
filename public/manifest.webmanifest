@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "Overload Training Log",
+  "short_name": "Overload",
+  "description": "Evidence-based program builder, workout logger with progressive overload, nutrition targets and progress tracking.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#edf0f4",
+  "theme_color": "#111b25",
+  "categories": ["health", "fitness", "sports"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

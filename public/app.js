@@ -1,307 +1,3 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Overload Training Log</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Evidence-based program builder, workout logger with progressive overload, nutrition targets and progress tracking.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
-<style>
-/* Layout: one narrow training-log column, sticky tab rail, rest timer docked to the bottom edge.
-   Colors borrow from competition plates: 20 kg blue is the accent, 15 kg yellow marks targets. */
-:root {
-  --bg: #edf0f4;
-  --surface: #ffffff;
-  --sunken: #e3e8ee;
-  --line: #d3dae2;
-  --fg: #111b25;
-  --muted: #566476;
-  --accent: #1f55d4;
-  --accent-fg: #ffffff;
-  --accent-soft: #dbe5fb;
-  --target: #c99700;
-  --target-soft: #f6e8b8;
-  --good: #1c8048;
-  --good-soft: #d6efe0;
-  --bad: #bf3a2e;
-  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
-  --font-body: "Barlow", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --radius: 10px;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0d1318; --surface: #151d25; --sunken: #1b252f; --line: #26323e;
-    --fg: #e3e9ef; --muted: #8b99a8; --accent: #6d93ff; --accent-fg: #0a1222;
-    --accent-soft: #1b2948; --target: #e8bd3a; --target-soft: #3a3115;
-    --good: #45c27a; --good-soft: #15301f; --bad: #f06b5e;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0d1318; --surface: #151d25; --sunken: #1b252f; --line: #26323e;
-  --fg: #e3e9ef; --muted: #8b99a8; --accent: #6d93ff; --accent-fg: #0a1222;
-  --accent-soft: #1b2948; --target: #e8bd3a; --target-soft: #3a3115;
-  --good: #45c27a; --good-soft: #15301f; --bad: #f06b5e;
-  color-scheme: dark;
-}
-:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
-* { box-sizing: border-box; }
-body {
-  margin: 0; background: var(--bg); color: var(--fg);
-  font: 400 16px/1.5 var(--font-body);
-  -webkit-font-smoothing: antialiased;
-}
-body::before {
-  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
-  z-index: 10; background: var(--bg);
-}
-[hidden] { display: none !important; }
-button, input, select, textarea { font: inherit; color: inherit; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-.wrap {
-  max-width: 760px; margin: 0 auto;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-}
-header.top { padding-block: 20px 4px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.brand { display: flex; align-items: center; gap: 10px; }
-.plates { display: flex; gap: 3px; align-items: center; }
-.plates i { display: block; width: 6px; border-radius: 2px; }
-.plates i:nth-child(1) { height: 30px; background: var(--accent); }
-.plates i:nth-child(2) { height: 24px; background: var(--target); }
-.plates i:nth-child(3) { height: 18px; background: var(--good); }
-.brand h1 { margin: 0; font: 700 34px/1 var(--font-display); letter-spacing: 0.04em; text-transform: uppercase; }
-.brand small { display: block; font: 500 12px/1.2 var(--font-body); color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
-
-nav.tabs {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
-  padding-block: 10px; border-bottom: 1px solid var(--line);
-}
-nav.tabs .wrap { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
-nav.tabs button {
-  flex: 1 0 auto; border: 0; background: transparent; padding: 8px 12px; border-radius: 8px;
-  font: 600 17px/1 var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); cursor: pointer;
-}
-nav.tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); }
-
-main { padding-block: 20px 120px; display: grid; gap: 28px; }
-section.block { display: grid; gap: 12px; min-width: 0; }
-.h { margin: 0; font: 700 24px/1.1 var(--font-display); letter-spacing: 0.02em; text-transform: uppercase; text-wrap: balance; }
-.h3 { margin: 0; font: 600 20px/1.15 var(--font-display); letter-spacing: 0.02em; }
-.label { font: 600 12px/1.2 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.muted { color: var(--muted); }
-.lede { margin: 0; color: var(--muted); max-width: 62ch; }
-.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-p { margin: 0; }
-
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 12px; min-width: 0; }
-
-.form-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-.field-group { display: grid; gap: 6px; min-width: 0; }
-.seg { display: flex; background: var(--sunken); border-radius: 9px; padding: 3px; gap: 3px; }
-.seg button {
-  flex: 1 1 0; min-width: 0; border: 0; background: transparent; padding: 8px 6px; border-radius: 7px;
-  font-weight: 600; font-size: 14px; color: var(--muted); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
-
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  border: 1px solid var(--line); background: var(--surface); color: var(--fg);
-  padding: 10px 16px; border-radius: 9px; font-weight: 600; cursor: pointer; min-height: 44px;
-}
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
-.btn.ghost { background: transparent; }
-.btn.danger { color: var(--bad); }
-.btn.small { min-height: 34px; padding: 6px 12px; font-size: 14px; }
-.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.spread { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; justify-content: space-between; }
-
-.chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.chip { display: inline-block; padding: 3px 9px; border-radius: 999px; background: var(--sunken); font-size: 13px; font-weight: 500; color: var(--muted); }
-.chip.on { background: var(--accent-soft); color: var(--accent); }
-button.chip { border: 0; cursor: pointer; }
-
-/* Program day */
-.day { display: grid; gap: 0; padding: 0; overflow: hidden; }
-.day-head { padding: 14px 16px 10px; display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
-.ex-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 10px 16px; border-top: 1px solid var(--line); }
-.ex-line .name { font-weight: 600; }
-.ex-line .rx { font: 500 15px/1.4 var(--font-mono); text-align: right; }
-.ex-line .meta { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
-
-/* Volume bars */
-.bars { display: grid; gap: 8px; }
-.bar-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 34px; gap: 10px; align-items: center; font-size: 14px; }
-.bar-track { position: relative; height: 14px; background: var(--sunken); border-radius: 4px; overflow: hidden; }
-.bar-zone { position: absolute; top: 0; bottom: 0; background: var(--target-soft); }
-.bar-fill { position: absolute; left: 0; top: 3px; bottom: 3px; background: var(--accent); border-radius: 3px; }
-.bar-row .num { text-align: right; }
-.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
-.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: var(--accent); }
-.legend span.c-fat::before { background: var(--target); }
-.legend span.c-carb::before { background: var(--good); }
-.legend span.zone::before { background: var(--target-soft); border: 1px solid var(--target); }
-
-/* Principles */
-.principles { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.principle { display: grid; gap: 4px; padding-left: 12px; border-left: 3px solid var(--line); }
-.principle b { font: 600 18px/1.2 var(--font-display); letter-spacing: 0.02em; }
-.principle p { font-size: 15px; color: var(--muted); }
-
-/* Train */
-.day-pick { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
-.day-pick button {
-  flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); border-radius: 9px; padding: 8px 12px;
-  cursor: pointer; text-align: left; display: grid; gap: 1px;
-}
-.day-pick button span { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.day-pick button b { font: 600 17px/1.1 var(--font-display); }
-.day-pick button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.day-pick button .next { color: var(--accent); }
-
-.exercise .ex-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
-.exercise .ex-top .h3 { min-width: 0; }
-.rx-line { font: 500 14px/1.4 var(--font-mono); color: var(--muted); }
-.hint { display: grid; gap: 2px; padding: 10px 12px; border-radius: 8px; background: var(--sunken); font-size: 14px; }
-.hint.up { background: var(--good-soft); }
-.hint.up b { color: var(--good); }
-.hint.new { background: var(--accent-soft); }
-.hint b { font-weight: 600; }
-.sets { display: grid; gap: 6px; }
-.setrow { display: grid; grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr) 48px; gap: 8px; align-items: center; }
-.setno { font: 500 14px var(--font-mono); color: var(--muted); text-align: center; }
-.inp { position: relative; display: block; min-width: 0; }
-.inp input {
-  width: 100%; height: 46px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg);
-  padding: 0 44px 0 12px; font: 500 17px var(--font-mono); font-variant-numeric: tabular-nums;
-}
-.inp input::placeholder { color: var(--muted); opacity: 0.6; }
-.inp span { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--muted); pointer-events: none; }
-.check {
-  height: 46px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer;
-  font-size: 20px; color: var(--muted);
-}
-.setrow.is-done .check { background: var(--good); border-color: var(--good); color: var(--surface); }
-.setrow.is-done input { border-color: var(--good); }
-details.cues summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--accent); }
-details.cues ul, .lib-cues { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; font-size: 15px; }
-
-.sticky-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-.sticky-actions .btn.primary { flex: 1 1 200px; }
-
-.timer {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-  background: var(--fg); color: var(--bg);
-  padding-top: 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-}
-.timer .wrap { display: flex; align-items: center; gap: 12px; }
-.timer .t { font: 500 28px/1 var(--font-mono); font-variant-numeric: tabular-nums; min-width: 4ch; }
-.timer .tl { flex: 1; min-width: 0; display: grid; gap: 6px; }
-.timer .tl small { font-size: 13px; opacity: 0.75; }
-.timer .prog { height: 4px; background: rgb(127 127 127 / 0.35); border-radius: 2px; overflow: hidden; }
-.timer .prog i { display: block; height: 100%; background: var(--target); width: 0; }
-.timer button { background: transparent; color: inherit; border: 1px solid rgb(127 127 127 / 0.5); border-radius: 8px; padding: 8px 10px; font-weight: 600; cursor: pointer; }
-.toast {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(90px + env(safe-area-inset-bottom, 0px)); z-index: 30;
-  background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 9px; font-weight: 600; font-size: 15px; max-width: calc(100% - 32px);
-}
-
-/* Progress */
-.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 2px; min-width: 0; }
-.tile .num { font-size: 26px; line-height: 1.1; }
-.tile .label { font-size: 11px; }
-.banner { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 12px 14px; border-radius: var(--radius); background: var(--target-soft); border: 1px solid var(--target); font-size: 15px; }
-.banner p { flex: 1 1 260px; }
-.chart { width: 100%; height: auto; display: block; }
-.chart .grid { stroke: var(--line); stroke-width: 1; }
-.chart .axis { fill: var(--muted); font: 500 11px var(--font-mono); }
-.chart .line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
-.chart .area { fill: var(--accent-soft); }
-.chart .dot { fill: var(--accent); }
-.chart .end { fill: var(--surface); stroke: var(--accent); stroke-width: 2.5; }
-.inline-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
-.inline-form .inp { flex: 1 1 140px; }
-select.sel { height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 0 10px; max-width: 100%; }
-.history { display: grid; gap: 0; padding: 0; }
-.hist-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 12px 16px; border-top: 1px solid var(--line); align-items: center; }
-.hist-row:first-child { border-top: 0; }
-.hist-row .meta { font-size: 13px; color: var(--muted); }
-.tag { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--target); margin-left: 6px; }
-.empty { padding: 18px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: var(--radius); }
-
-/* Nutrition */
-.macro-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.macro { display: grid; gap: 2px; }
-.macro .num { font-size: 24px; }
-.macro .num small { font: 500 14px var(--font-body); }
-.macro-bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; }
-.macro-bar i:nth-child(1) { background: var(--accent); }
-.macro-bar i:nth-child(2) { background: var(--target); }
-.macro-bar i:nth-child(3) { background: var(--good); }
-.kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
-
-/* Library */
-.search { width: 100%; height: 46px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); padding: 0 14px; }
-.lib { display: grid; gap: 8px; }
-.lib details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; }
-.lib summary { cursor: pointer; display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; list-style: none; }
-.lib summary::-webkit-details-marker { display: none; }
-.lib summary b { font: 600 19px/1.2 var(--font-display); }
-.lib .body { display: grid; gap: 8px; margin-top: 8px; font-size: 15px; }
-
-textarea.backup { width: 100%; min-height: 90px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 10px; font: 500 12px/1.4 var(--font-mono); }
-footer.foot { padding-block: 0 24px; font-size: 13px; color: var(--muted); }
-
-@media (max-width: 520px) {
-  .macro-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .tile .num { font-size: 22px; }
-  .bar-row { grid-template-columns: 80px minmax(0, 1fr) 30px; }
-  nav.tabs button { font-size: 15px; padding: 8px 7px; letter-spacing: 0.03em; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .timer .prog i { transition: width 0.25s linear; }
-  .seg button, nav.tabs button { transition: background 0.15s, color 0.15s; }
-}
-</style>
-</head>
-<body>
-<header class="wrap top">
-  <div class="brand">
-    <div class="plates" aria-hidden="true"><i></i><i></i><i></i></div>
-    <div><h1>Overload</h1><small>Evidence-based training log</small></div>
-  </div>
-</header>
-<nav class="tabs" aria-label="Sections">
-  <div class="wrap" role="tablist">
-    <button role="tab" data-action="tab" data-tab="plan">Plan</button>
-    <button role="tab" data-action="tab" data-tab="train">Train</button>
-    <button role="tab" data-action="tab" data-tab="progress">Progress</button>
-    <button role="tab" data-action="tab" data-tab="fuel">Nutrition</button>
-    <button role="tab" data-action="tab" data-tab="library">Exercises</button>
-  </div>
-</nav>
-<main class="wrap" id="main"></main>
-<footer class="wrap foot">
-  Independent project, not affiliated with or endorsed by any coach or fitness brand. General fitness information only; check with a doctor before starting a new program if you have health concerns.
-</footer>
-<div class="timer" id="timer" hidden>
-  <div class="wrap">
-    <div class="t" id="timer-t">0:00</div>
-    <div class="tl"><small id="timer-label">Rest</small><div class="prog"><i id="timer-bar"></i></div></div>
-    <button type="button" data-action="timer-add">+15s</button>
-    <button type="button" data-action="timer-stop">Skip</button>
-  </div>
-</div>
-<div class="toast" id="toast" role="status" hidden></div>
-
-<script>
 "use strict";
 
 /* ---------- Exercise library ---------- */
@@ -468,6 +164,7 @@ function defaults() {
     profile: { goal: "build", level: "intermediate", equip: "gym", days: 4 },
     body: { sex: "male", age: 28, heightCm: 178, activity: 1.55 },
     sessions: [], weights: [], drafts: {},
+    deleted: {}, settingsAt: 0,
   };
 }
 
@@ -509,6 +206,12 @@ function load() {
   return seedExamples(defaults());
 }
 function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ } }
+/* Saves a change that should reach the user's other devices. */
+function persist(settingsChanged) {
+  if (settingsChanged) S.settingsAt = Date.now();
+  save();
+  queueSync();
+}
 
 /* ---------- Units & formatting ---------- */
 function toDisp(kg) { return S.unit === "kg" ? kg : kg / KG_PER_LB; }
@@ -686,16 +389,18 @@ function viewPlan() {
   </section>
   <section class="block">
     <h2 class="h">Settings</h2>
+    ${viewAccount()}
     <div class="card">
       ${field("Units", seg("unit", "unit", S.unit, [["kg", "Kilograms"], ["lb", "Pounds"]]))}
+      ${viewInstall()}
       <div class="field-group"><span class="label">Backup</span>
-        <p class="muted">Your data stays in this browser. Copy a backup to keep it safe or move it to another device.</p>
+        <p class="muted">${Sync.user ? "Your data is saved to your account. You can also copy a backup as text." : "Your data stays in this browser. Copy a backup to keep it safe or move it to another device."}</p>
         <div class="row"><button class="btn small" data-action="copy-backup">Copy backup</button></div>
         <textarea class="backup" id="restore-text" placeholder="Paste a backup here to restore it"></textarea>
         <div class="row"><button class="btn small" data-action="restore">Restore backup</button>
           ${ui.confirm === "reset"
             ? `<button class="btn small danger" data-action="reset-yes">Yes, erase everything</button><button class="btn small ghost" data-action="cancel">Keep my data</button>`
-            : `<button class="btn small ghost danger" data-action="reset">Erase all data</button>`}</div>
+            : `<button class="btn small ghost danger" data-action="reset">${Sync.user ? "Erase all data on every device" : "Erase all data"}</button>`}</div>
       </div>
     </div>
   </section>`;
@@ -949,6 +654,243 @@ function toast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 2600);
 }
 
+/* ---------- Accounts & sync ---------- */
+const Sync = { available: false, checked: false, user: null, status: "idle", lastAt: 0, timer: null, inflight: false, again: false };
+let auth = { mode: "signin", error: "", busy: false, deleting: false, deleteError: "" };
+
+async function api(route, opts = {}) {
+  const res = await fetch("api/" + route, {
+    method: opts.method || "GET",
+    headers: opts.body ? { "Content-Type": "application/json" } : {},
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+    credentials: "same-origin",
+  });
+  let data = null;
+  try { data = await res.json(); } catch (e) { /* empty body */ }
+  if (!res.ok) throw Object.assign(new Error((data && data.error) || "The server didn't respond as expected."), { status: res.status });
+  return data;
+}
+
+function syncDoc() {
+  return {
+    sessions: S.sessions.filter((s) => !s.example),
+    weights: S.weights.filter((w) => !w.example),
+    deleted: S.deleted || {},
+    settings: { unit: S.unit, profile: S.profile, body: S.body },
+    settingsAt: S.settingsAt || 0,
+  };
+}
+
+/* Merges a server document into local state, keeping any edits made while the request was in flight. */
+function applyDoc(doc) {
+  const local = syncDoc();
+  const m = OverloadSync.merge(local, doc);
+  S.sessions = m.sessions;
+  S.weights = m.weights;
+  S.deleted = m.deleted;
+  if (m.settings && m.settingsAt > local.settingsAt) {
+    if (m.settings.unit !== S.unit) convertUnit(m.settings.unit);
+    S.profile = m.settings.profile;
+    S.body = m.settings.body;
+  }
+  S.settingsAt = m.settingsAt;
+  save();
+}
+
+function setSyncStatus(status) {
+  Sync.status = status;
+  const chip = document.getElementById("sync-chip");
+  if (chip) {
+    const text = { syncing: "Syncing…", ok: "Synced", offline: "Offline", error: "Sync failed" }[status];
+    chip.hidden = !Sync.user || !text;
+    chip.textContent = text || "";
+    chip.dataset.state = status;
+  }
+  const line = document.getElementById("sync-line");
+  if (line) line.textContent = syncLine();
+}
+
+function syncLine() {
+  if (Sync.status === "syncing") return "Syncing…";
+  if (Sync.status === "offline") return "You're offline. Changes will sync when you reconnect.";
+  if (Sync.status === "error") return "Last sync failed. It will retry automatically.";
+  if (!Sync.lastAt) return "Not synced yet.";
+  const mins = Math.round((Date.now() - Sync.lastAt) / 60000);
+  return mins < 1 ? "Synced just now." : `Synced ${mins} min ago.`;
+}
+
+function quietRender() {
+  const a = document.activeElement;
+  if (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.tagName === "SELECT")) return;
+  render();
+}
+
+async function syncNow() {
+  if (!Sync.user) return;
+  if (Sync.inflight) { Sync.again = true; return; }
+  Sync.inflight = true;
+  setSyncStatus("syncing");
+  try {
+    const doc = await api("sync", { method: "PUT", body: syncDoc() });
+    applyDoc(doc);
+    Sync.lastAt = Date.now();
+    setSyncStatus("ok");
+    quietRender();
+  } catch (e) {
+    if (e.status === 401) { setAccount(null); setSyncStatus("idle"); quietRender(); toast("You were signed out. Sign in again to keep syncing."); }
+    else setSyncStatus(navigator.onLine === false ? "offline" : "error");
+  } finally {
+    Sync.inflight = false;
+    if (Sync.again) { Sync.again = false; syncNow(); }
+  }
+}
+
+function queueSync() {
+  if (!Sync.user) return;
+  clearTimeout(Sync.timer);
+  Sync.timer = setTimeout(syncNow, 1200);
+}
+
+function setAccount(email) {
+  Sync.user = email;
+  S.account = email;
+  save();
+}
+
+/* Checks the server and session. Offline, a remembered account stays signed in
+   so the installed app works without a connection and syncs once it's back. */
+async function connect() {
+  let reachable = false;
+  try { await api("health"); reachable = true; } catch (e) { /* offline or no server */ }
+  if (reachable) {
+    Sync.available = true;
+    try { setAccount((await api("me")).email || null); } catch (e) { /* keep the remembered account */ }
+  } else if (S.account) {
+    Sync.available = true;
+    Sync.user = S.account;
+    setSyncStatus("offline");
+  }
+  Sync.checked = true;
+  quietRender();
+  if (reachable && Sync.user) syncNow();
+}
+
+// Static copies (opened from disk or hosted without the server) mark themselves device-only.
+const DEVICE_ONLY = !location.protocol.startsWith("http") || !!document.querySelector('meta[name="overload:device-only"]');
+
+function initSync() {
+  if (DEVICE_ONLY) { Sync.checked = true; return; }
+  connect();
+  window.addEventListener("online", () => connect());
+  window.addEventListener("offline", () => { if (Sync.user) setSyncStatus("offline"); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") syncNow(); });
+}
+
+function viewAccount() {
+  if (!Sync.checked) return "";
+  if (!Sync.available) {
+    return `<div class="card"><div class="field-group"><span class="label">Account</span>
+      <p class="muted">Accounts and sync need the Overload server. This copy keeps your data on this device only.</p></div></div>`;
+  }
+  if (Sync.user) {
+    return `<div class="card"><div class="field-group"><span class="label">Account</span>
+      <p>Signed in as <b>${esc(Sync.user)}</b></p>
+      <p class="muted" id="sync-line">${syncLine()}</p>
+      <div class="row"><button class="btn small" data-action="sync-now">Sync now</button>
+        <button class="btn small ghost" data-action="sign-out">Sign out</button>
+        ${auth.deleting ? "" : `<button class="btn small ghost danger" data-action="delete-account">Delete account</button>`}</div>
+      ${auth.deleting ? `<form class="auth-form" data-form="delete-account">
+        <p class="muted">This permanently deletes your account and synced data. Workouts on this device are kept.</p>
+        <label class="inp"><input id="delete-password" type="password" autocomplete="current-password" aria-label="Password" placeholder="Enter your password to confirm"><span></span></label>
+        ${auth.deleteError ? `<p class="form-error" role="alert">${esc(auth.deleteError)}</p>` : ""}
+        <div class="row"><button class="btn small danger" type="submit">Delete my account</button><button class="btn small ghost" type="button" data-action="delete-cancel">Cancel</button></div>
+      </form>` : ""}
+    </div></div>`;
+  }
+  const signup = auth.mode === "signup";
+  return `<div class="card"><div class="field-group"><span class="label">Account</span>
+    <p class="muted">Sign in to back up your training and sync it between your phone and computer.</p>
+    ${seg("auth-mode", "mode", auth.mode, [["signin", "Sign in"], ["signup", "Create account"]])}
+    <form class="auth-form" data-form="auth">
+      <label class="inp"><input id="auth-email" type="email" autocomplete="email" aria-label="Email" placeholder="Email" required><span></span></label>
+      <label class="inp"><input id="auth-password" type="password" autocomplete="${signup ? "new-password" : "current-password"}" aria-label="Password" placeholder="${signup ? "Password (8+ characters)" : "Password"}" required minlength="${signup ? 8 : 1}"><span></span></label>
+      ${auth.error ? `<p class="form-error" role="alert">${esc(auth.error)}</p>` : ""}
+      <button class="btn primary" type="submit" ${auth.busy ? "disabled" : ""}>${auth.busy ? "Please wait…" : signup ? "Create account" : "Sign in"}</button>
+      ${S.sessions.some((s) => !s.example) ? `<p class="muted" style="font-size:14px">Workouts already on this device will be added to your account.</p>` : ""}
+    </form>
+  </div></div>`;
+}
+
+async function submitAuth(form) {
+  const email = form.querySelector("#auth-email").value.trim();
+  const password = form.querySelector("#auth-password").value;
+  auth.busy = true; auth.error = ""; render();
+  try {
+    const res = await api(auth.mode === "signup" ? "signup" : "login", { method: "POST", body: { email, password } });
+    setAccount(res.email);
+    dropExamples(); save();
+    auth = { mode: "signin", error: "", busy: false, deleting: false, deleteError: "" };
+    render();
+    toast(`Signed in as ${res.email}.`);
+    await syncNow();
+  } catch (e) {
+    auth.busy = false;
+    auth.error = e.status ? e.message : "Can't reach the server. Check your connection and try again.";
+    render();
+    const f = document.getElementById("auth-email"); if (f) f.value = email;
+  }
+}
+
+function clearLocalAccountData() {
+  const keep = { unit: S.unit, profile: S.profile, body: S.body };
+  S = Object.assign(defaults(), keep);
+  save();
+}
+
+async function submitDeleteAccount(form) {
+  const password = form.querySelector("#delete-password").value;
+  try {
+    await api("account/delete", { method: "POST", body: { password } });
+    setAccount(null); auth.deleting = false; auth.deleteError = "";
+    S.deleted = {}; S.settingsAt = 0; save();
+    setSyncStatus("idle"); render(); toast("Account deleted.");
+  } catch (e) {
+    auth.deleteError = e.status ? e.message : "Can't reach the server. Try again when you're online.";
+    render();
+  }
+}
+
+/* ---------- Install as an app ---------- */
+let installPrompt = null;
+const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+function initInstall() {
+  if ("serviceWorker" in navigator && !DEVICE_ONLY) {
+    navigator.serviceWorker.register("sw.js").catch(() => { /* not available here */ });
+  }
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    installPrompt = e;
+    const btn = document.getElementById("install-btn");
+    if (btn) btn.hidden = false;
+    quietRender();
+  });
+  window.addEventListener("appinstalled", () => { installPrompt = null; const b = document.getElementById("install-btn"); if (b) b.hidden = true; quietRender(); toast("Overload installed."); });
+  const btn = document.getElementById("install-btn");
+  if (btn) btn.hidden = !installPrompt;
+}
+
+function viewInstall() {
+  if (DEVICE_ONLY) return "";
+  let body;
+  if (isStandalone()) body = `<p class="muted">You're using the installed app.</p>`;
+  else if (installPrompt) body = `<div class="row"><button class="btn small primary" data-action="install">Install Overload</button></div>`;
+  else if (isIos()) body = `<p class="muted">In Safari, tap the Share button, then <b>Add to Home Screen</b>.</p>`;
+  else body = `<p class="muted">Open your browser menu and choose <b>Install app</b> or <b>Add to Home screen</b>.</p>`;
+  return `<div class="field-group"><span class="label">Install as an app</span>${body}</div>`;
+}
+
 /* ---------- Actions ---------- */
 function draftRow(dayKey, exId, i) {
   const d = (S.drafts[dayKey] = S.drafts[dayKey] || {});
@@ -978,10 +920,10 @@ const actions = {
   tab(b) { ui.tab = b.dataset.tab; ui.confirm = null; render(); window.scrollTo(0, 0); try { history.replaceState(null, "", "#" + ui.tab); } catch (e) { /* ignore */ } },
   profile(b) {
     const v = b.dataset.key === "days" ? Number(b.dataset.val) : b.dataset.val;
-    S.profile[b.dataset.key] = v; ui.day = null; save(); render();
+    S.profile[b.dataset.key] = v; ui.day = null; persist(true); render();
   },
-  unit(b) { convertUnit(b.dataset.val); save(); render(); },
-  body(b) { S.body[b.dataset.key] = b.dataset.key === "activity" ? Number(b.dataset.val) : b.dataset.val; save(); render(); },
+  unit(b) { convertUnit(b.dataset.val); persist(true); render(); },
+  body(b) { S.body[b.dataset.key] = b.dataset.key === "activity" ? Number(b.dataset.val) : b.dataset.val; persist(true); render(); },
   "pick-day"(b) { ui.day = b.dataset.day; ui.confirm = null; render(); },
   done(b) {
     const { ex, i } = b.dataset;
@@ -1017,7 +959,7 @@ const actions = {
     if (!exercises.length) { toast("Log at least one set first."); return; }
     dropExamples();
     S.sessions.push({ id: "s" + Date.now(), date: isoDate(new Date()), dayKey: day.key, dayName: day.name, exercises });
-    delete S.drafts[ui.day]; ui.day = null; ui.confirm = null; save();
+    delete S.drafts[ui.day]; ui.day = null; ui.confirm = null; persist(false);
     const n = exercises.reduce((a, e) => a + e.sets.length, 0);
     actions["timer-stop"]();
     toast(`${day.name} saved. ${n} ${n === 1 ? "set" : "sets"} logged.`);
@@ -1027,7 +969,11 @@ const actions = {
   "discard-yes"() { delete S.drafts[ui.day]; ui.confirm = null; save(); render(); toast("Workout cleared."); },
   cancel() { ui.confirm = null; render(); },
   del(b) { ui.confirm = "del:" + b.dataset.id; render(); },
-  "del-yes"(b) { S.sessions = S.sessions.filter((s) => s.id !== b.dataset.id); ui.confirm = null; save(); render(); toast("Workout removed."); },
+  "del-yes"(b) {
+    const id = b.dataset.id;
+    if (!S.sessions.some((s) => s.id === id && s.example)) S.deleted[id] = Date.now();
+    S.sessions = S.sessions.filter((s) => s.id !== id); ui.confirm = null; persist(false); render(); toast("Workout removed.");
+  },
   "clear-examples"() { dropExamples(); save(); render(); toast("Examples removed."); },
   "lib-muscle"(b) { ui.libMuscle = b.dataset.val; render(); },
   "copy-backup"() {
@@ -1040,11 +986,33 @@ const actions = {
     try {
       const data = JSON.parse(ta.value);
       if (!data || !Array.isArray(data.sessions) || !data.profile) throw new Error("bad");
-      S = Object.assign(defaults(), data); save(); render(); toast("Backup restored.");
+      S = Object.assign(defaults(), data, { drafts: {}, account: Sync.user }); persist(true); render(); toast("Backup restored.");
     } catch (e) { toast("That isn't a valid backup. Paste the full text you copied."); }
   },
   reset() { ui.confirm = "reset"; render(); },
-  "reset-yes"() { S = defaults(); ui.confirm = null; save(); render(); toast("All data erased."); },
+  "reset-yes"() {
+    const now = Date.now(), deleted = Object.assign({}, S.deleted);
+    S.sessions.forEach((s) => { if (!s.example) deleted[s.id] = now; });
+    S.weights.forEach((w) => { if (!w.example) deleted["w:" + w.date] = now; });
+    S = defaults();
+    if (Sync.user) { S.deleted = deleted; S.account = Sync.user; }
+    ui.confirm = null; persist(true); render(); toast("All data erased.");
+  },
+  "auth-mode"(b) { auth.mode = b.dataset.val; auth.error = ""; render(); },
+  "sync-now"() { syncNow(); },
+  async "sign-out"() {
+    try { await api("logout", { method: "POST", body: {} }); } catch (e) { /* sign out locally anyway */ }
+    setAccount(null); clearLocalAccountData(); setSyncStatus("idle"); render();
+    toast("Signed out. Your data is safe in your account.");
+  },
+  "delete-account"() { auth.deleting = true; auth.deleteError = ""; render(); },
+  "delete-cancel"() { auth.deleting = false; render(); },
+  async install() {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    try { await installPrompt.userChoice; } catch (e) { /* ignore */ }
+    installPrompt = null; render();
+  },
   "timer-add"() { T.end += 15000; T.dur += 15; if (!T.iv) { T.iv = setInterval(tick, 250); } tick(); },
   "timer-stop"() { clearInterval(T.iv); T.iv = null; document.getElementById("timer").hidden = true; },
 };
@@ -1069,7 +1037,7 @@ document.addEventListener("input", (e) => {
   if (bind === "age") S.body.age = v;
   if (bind === "height") S.body.heightCm = S.unit === "kg" ? v : v * 2.54;
   if (bind === "bodyweight") S.body.weightKg = fromDisp(v);
-  save();
+  persist(true);
 });
 document.addEventListener("change", (e) => {
   const t = e.target;
@@ -1078,21 +1046,22 @@ document.addEventListener("change", (e) => {
 });
 document.addEventListener("submit", (e) => {
   e.preventDefault();
+  if (e.target.dataset.form === "auth") { submitAuth(e.target); return; }
+  if (e.target.dataset.form === "delete-account") { submitDeleteAccount(e.target); return; }
   if (e.target.dataset.form !== "weigh") return;
   const v = parseFloat(document.getElementById("weigh-in").value.replace(",", "."));
   if (isNaN(v) || v <= 0) { toast("Enter your weight as a number."); return; }
   dropExamples();
   const today = isoDate(new Date());
   S.weights = S.weights.filter((w) => w.date !== today);
-  S.weights.push({ date: today, kg: Math.round(fromDisp(v) * 100) / 100 });
+  S.weights.push({ date: today, kg: Math.round(fromDisp(v) * 100) / 100, at: Date.now() });
   S.body.weightKg = fromDisp(v);
-  save(); render(); toast("Weigh-in logged.");
+  persist(true); render(); toast("Weigh-in logged.");
 });
 
 S = load();
 const hash = (location.hash || "").slice(1);
 if (VIEWS[hash]) ui.tab = hash;
 render();
-</script>
-</body>
-</html>
+initSync();
+initInstall();
